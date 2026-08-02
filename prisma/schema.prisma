@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model Production {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  eggCount  Int
+  createdAt DateTime @default(now())
+}
+
+model Sales {
+  id           String    @id @default(cuid())
+  date         DateTime  @default(now())
+  shopName     String
+  trayCount    Int
+  pricePerTray Int
+  total        Int
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  createdAt    DateTime  @default(now())
+  invoiceId    String?   @unique
+  invoice      Invoice?  @relation(fields: [invoiceId], references: [id])
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String    @unique
+  createdAt DateTime  @default(now())
+  sales     Sales[]
+  invoices  Invoice[]
+}
+
+model Supply {
+  id         String    @id @default(cuid())
+  type       String
+  name       String
+  quantity   Int
+  price      Int
+  date       DateTime  @default(now())
+  expiryDate DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Invoice {
+  id         String   @id @default(cuid())
+  number     String   @unique
+  date       DateTime @default(now())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  items      String
+  total      Int
+  salesId    String?
+  sales      Sales?
+  createdAt  DateTime @default(now())
+}
