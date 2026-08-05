@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { NextRequest } from 'next/server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -26,12 +27,12 @@ export function verifyToken(token: string) {
       username: string;
       role: string;
     };
-  } catch (error) {
+  } catch  {
     return null;
   }
 }
 
-export function getCurrentUser(request: Request) {
+export function getCurrentUser(request: NextRequest | Request) {
   const cookie = request.headers.get('cookie');
   if (!cookie) return null;
   
@@ -39,5 +40,8 @@ export function getCurrentUser(request: Request) {
   if (!tokenCookie) return null;
   
   const token = tokenCookie.split('=')[1];
+  if (!token) {
+      return null;
+  }
   return verifyToken(token);
 }

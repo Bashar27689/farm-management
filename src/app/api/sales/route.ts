@@ -134,8 +134,21 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'desc' }
     });
 
-    const totalRevenue = sales.reduce((sum, s) => sum + s.total, 0);
-    const totalTrays = sales.reduce((sum, s) => sum + s.trayCount, 0);
+const totalRevenue = sales.reduce(
+  (
+    sum: number,
+    s: { total: number }
+  ) => sum + s.total,
+  0
+);
+
+const totalTrays = sales.reduce(
+  (
+    sum: number,
+    s: { trayCount: number }
+  ) => sum + s.trayCount,
+  0
+);
 
     return NextResponse.json({
       sales,

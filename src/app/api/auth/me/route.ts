@@ -4,10 +4,10 @@ import { getCurrentUser } from '../../../../lib/auth';
 import { prisma } from '../../../../lib/prisma';
 
 export async function GET(request: NextRequest) {
-  const user = getCurrentUser(request);
-  if (!user) {
-    return NextResponse.json({ message: 'غير مصرح' }, { status: 401 });
-  }
+    const user =  getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ message: 'غير مصرح' }, { status: 401 });
+    }
 
   try {
     const fullUser = await prisma.user.findUnique({

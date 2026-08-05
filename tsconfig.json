@@ -19,7 +19,7 @@
     // Recommended Options
     "strict": true,
     "esModuleInterop": true,
-    "ignoreDeprecations": "6.0",
+    //"ignoreDeprecations": "6.0",
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -62,5 +62,9 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ]
 }

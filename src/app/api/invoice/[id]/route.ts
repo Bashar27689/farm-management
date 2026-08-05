@@ -5,16 +5,16 @@ import { getCurrentUser } from '../../../../lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = getCurrentUser(request);
   if (!user) {
     return NextResponse.json({ message: 'غير مصرح' }, { status: 401 });
   }
-
+const { id } = await params; 
   try {
     const invoice = await prisma.invoice.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         customer: true,
         sales: true,

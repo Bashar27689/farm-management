@@ -54,18 +54,34 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'desc' }
     });
 
-    const totalCost = supplies.reduce((sum, s) => sum + (s.price * s.quantity), 0);
-
+const totalCost = supplies.reduce(
+  (
+    sum: number,
+    s: {
+      price: number;
+      quantity: number;
+    }
+  ) => sum + (s.price * s.quantity),
+  0
+);
     return NextResponse.json({
       supplies,
       stats: {
         totalCost,
         totalItems: supplies.length,
-        byType: {
-          FEED: supplies.filter(s => s.type === 'FEED').length,
-          VACCINE: supplies.filter(s => s.type === 'VACCINE').length,
-          OTHER: supplies.filter(s => s.type === 'OTHER').length,
-        }
+      byType: {
+  FEED: supplies.filter(
+    (s: { type: string }) => s.type === "FEED"
+  ).length,
+
+  VACCINE: supplies.filter(
+    (s: { type: string }) => s.type === "VACCINE"
+  ).length,
+
+  OTHER: supplies.filter(
+    (s: { type: string }) => s.type === "OTHER"
+  ).length,
+}
       }
     });
   } catch (error) {

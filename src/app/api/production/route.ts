@@ -74,8 +74,13 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'desc' }
     });
 
-    const totalEggs = productions.reduce((sum, p) => sum + p.eggCount, 0);
-
+const totalEggs = productions.reduce(
+  (
+    sum: number,
+    p: { eggCount: number }
+  ) => sum + p.eggCount,
+  0
+);
     return NextResponse.json({
       productions,
       stats: {

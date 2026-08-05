@@ -8,9 +8,7 @@ const globalForPrisma = globalThis as unknown as {
 
 const adapter = new PrismaMariaDb(
   process.env.DATABASE_URL!,
-  {
-    connectionLimit: 10,
-  }
+  
 );
 
 export const prisma =

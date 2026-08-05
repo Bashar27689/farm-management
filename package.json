@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.9.1",
@@ -20,20 +21,31 @@
     "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3",
     "next": "16.2.10",
+    "puppeteer": "^25.4.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "undici": "^8.9.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "prisma": "^7.9.1",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.9.1": true,
+    "bcrypt@6.0.0": true,
+    "esbuild@0.28.1": true,
+    "prisma@7.9.1": true,
+    "puppeteer@25.5.0": true,
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true
   }
 }

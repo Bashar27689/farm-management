@@ -4,6 +4,7 @@ allowBuilds:
   bcrypt: false
   esbuild: false
   prisma: false
+  puppeteer: false
   sharp: true
   unrs-resolver: true
 ignoredBuiltDependencies:

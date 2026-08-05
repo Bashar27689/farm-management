@@ -1,13 +1,15 @@
 // src/app/api/users/[id]/reset-password/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { hashPassword,getCurrentUser } from '../../../../../lib/auth';
+import { hashPassword, getCurrentUser } from '../../../../../lib/auth';
 import { prisma } from '../../../../../lib/prisma';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }  // <- التغيير هنا: Promise
 ) {
   try {
+    const { id } = await params;  // 
+    
     const user = getCurrentUser(request);
     if (!user || user.role !== 'ADMIN') {
       return NextResponse.json(
@@ -26,10 +28,22 @@ export async function POST(
       );
     }
 
+    // التحقق من وجود المستخدم
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { message: 'المستخدم غير موجود' },
+        { status: 404 }
+      );
+    }
+
     const hashedPassword = await hashPassword(password);
 
     await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { password: hashedPassword },
     });
 
