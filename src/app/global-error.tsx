@@ -1,4 +1,3 @@
-// app/_global-error.tsx
 'use client'; // لازم تكون Client Component
 
 export default function GlobalError({

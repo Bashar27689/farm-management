@@ -1,9 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
- serverExternalPackages: ["bcryptjs", "pdf-parse", "xlsx", "sharp"], 
-  experimental: {
-  },
+  output: "standalone",
+
+  serverExternalPackages: [
+    "puppeteer",
+    "bcrypt",
+    "bcryptjs",
+    "@prisma/client",
+    "@react-pdf/renderer",
+    "pdf-parse",
+    "xlsx",
+    "sharp",
+  ],
 };
 
 export default nextConfig;
