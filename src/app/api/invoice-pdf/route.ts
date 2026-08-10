@@ -5,9 +5,8 @@ import { prisma } from "../../../lib/prisma";
 import { getCurrentUser } from "../../../lib/auth";
 import fs from "fs";
 import path from "path";
-
-export const runtime = "nodejs";
 import puppeteer from "puppeteer";
+export const runtime = "nodejs";
 
 // =============================
 // Convert Image To Base64
@@ -575,14 +574,14 @@ signature
 
 `;
 
-const { default: puppeteer } = await import("puppeteer");
 
     const browser = await puppeteer.launch({
   
   headless: true,
   args:[
-    "--no-sandbox",
-    "--disable-setuid-sandbox"
+     "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage"
   ]
 });
 
