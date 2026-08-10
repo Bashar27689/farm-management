@@ -3,12 +3,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { getCurrentUser } from "../../../lib/auth";
-import puppeteer from "puppeteer";
 import fs from "fs";
 import path from "path";
 
 export const runtime = "nodejs";
-
 
 // =============================
 // Convert Image To Base64
@@ -70,17 +68,15 @@ export async function POST(
 ) {
 
   try {
-
     const user = getCurrentUser(request);
 
     if (!user) {
-
       return NextResponse.json(
         {
-          message: "غير مصرح"
+          message: "غير مصرح",
         },
         {
-          status: 401
+          status: 401,
         }
       );
     }
@@ -578,8 +574,10 @@ signature
 
 `;
 
+const { default: puppeteer } = await import("puppeteer");
 
-const browser = await puppeteer.launch({
+    const browser = await puppeteer.launch({
+  
   headless: true,
   args:[
     "--no-sandbox",
