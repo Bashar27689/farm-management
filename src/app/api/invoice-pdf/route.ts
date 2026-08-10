@@ -7,6 +7,7 @@ import fs from "fs";
 import path from "path";
 
 export const runtime = "nodejs";
+import puppeteer from "puppeteer";
 
 // =============================
 // Convert Image To Base64
