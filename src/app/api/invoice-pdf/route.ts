@@ -585,20 +585,21 @@ signature
   ]
 });
 
-
+console.log("PDF: browser launched");
     const page =
       await browser.newPage();
 
 
-
+console.log("PDF: page created");
     await page.setContent(
       html,
       {
         waitUntil:"load"
       }
     );
+console.log("PDF: content loaded");
 
-
+console.log("PDF: before page.pdf");
 
     const pdf =
       await page.pdf({
@@ -609,7 +610,7 @@ signature
 
       });
 
-
+console.log("PDF: pdf generated");
 
     await browser.close();
 
