@@ -66,6 +66,7 @@ function getFontBase64() {
 export async function POST(
   request: NextRequest
 ) {
+console.log("PDF 1: route started");
 
   try {
     const user = getCurrentUser(request);
@@ -574,6 +575,7 @@ signature
 
 `;
 
+console.log("PDF 2: before puppeteer launch");
 
     const browser = await puppeteer.launch({
   
@@ -590,16 +592,16 @@ console.log("PDF: browser launched");
       await browser.newPage();
 
 
-console.log("PDF: page created");
+console.log("PDF 4: page created");
     await page.setContent(
       html,
       {
         waitUntil:"load"
       }
     );
-console.log("PDF: content loaded");
+console.log("PDF 5: content loaded");
 
-console.log("PDF: before page.pdf");
+console.log("PDF 6: before page.pdf");
 
     const pdf =
       await page.pdf({
@@ -610,7 +612,7 @@ console.log("PDF: before page.pdf");
 
       });
 
-console.log("PDF: pdf generated");
+console.log("PDF 7: pdf generated");
 
     await browser.close();
 
