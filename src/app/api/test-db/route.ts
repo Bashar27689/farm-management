@@ -17,10 +17,9 @@ export async function GET() {
       password: process.env.DATABASE_PASSWORD!,
       database: process.env.DATABASE_NAME!,
       connectionLimit: 5,
-      ssl: {
-        rejectUnauthorized: false,
-      },
-      allowPublicKeyRetrieval: true,
+    ssl: { rejectUnauthorized: false },
+  allowPublicKeyRetrieval: true,
+  connectTimeout: 10000,
     });
 
     prisma = new PrismaClient({
