@@ -20,17 +20,7 @@ export async function GET() {
       ssl: {
         rejectUnauthorized: false,
       },
-      connectTimeout: 10000,
-      logger: {
-        error: (error) =>
-          console.error("PrismaAdapterError:", error),
-
-        warning: (info) =>
-          console.warn("PrismaAdapterWarning:", info),
-
-        network: (info) =>
-          console.log("PrismaAdapterNetwork:", info),
-      },
+      allowPublicKeyRetrieval: true,
     });
 
     prisma = new PrismaClient({
