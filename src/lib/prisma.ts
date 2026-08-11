@@ -13,8 +13,9 @@ const adapter = new PrismaMariaDb({
   password: process.env.DATABASE_PASSWORD!,
   database: process.env.DATABASE_NAME!,
   connectionLimit: 5,
-  ssl: { rejectUnauthorized: false },
+ ssl: { rejectUnauthorized: false },
   allowPublicKeyRetrieval: true,
+  connectTimeout: 10000,
 
 });
 
@@ -23,6 +24,12 @@ export const prisma =
   new PrismaClient({
     adapter,
   });
+  console.log("DB Config:", {
+  host: process.env.DATABASE_HOST,
+  port: process.env.DATABASE_PORT,
+  user: process.env.DATABASE_USER,
+  database: process.env.DATABASE_NAME,
+});
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
