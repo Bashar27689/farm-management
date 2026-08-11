@@ -7,14 +7,24 @@ export async function GET() {
   let connection;
 
   try {
-connection = await mariadb.createConnection({
-  host: process.env.DATABASE_HOST!,
-  port: Number(process.env.DATABASE_PORT ?? 3306),
-  user: process.env.DATABASE_USER!,
-  password: process.env.DATABASE_PASSWORD!,
-  database: process.env.DATABASE_NAME!,
-  connectTimeout: 10000,
-});
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if (!databaseUrl) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "DATABASE_URL is not defined",
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log("TEST DB: DATABASE_URL exists");
+
+    connection = await mariadb.createConnection(databaseUrl);
+
+    console.log("TEST DB: connection established");
+
     const result = await connection.query("SELECT 1 AS test");
 
     return NextResponse.json({
@@ -22,7 +32,7 @@ connection = await mariadb.createConnection({
       result,
     });
   } catch (error) {
-    console.error("DIRECT DB ERROR:", error);
+    console.error("TEST DB ERROR:", error);
 
     return NextResponse.json(
       {
@@ -33,7 +43,12 @@ connection = await mariadb.createConnection({
     );
   } finally {
     if (connection) {
-      await connection.end();
+      try {
+        await connection.end();
+        console.log("TEST DB: connection closed");
+      } catch (error) {
+        console.error("TEST DB CLOSE ERROR:", error);
+      }
     }
   }
 }
