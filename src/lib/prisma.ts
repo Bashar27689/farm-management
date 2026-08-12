@@ -24,12 +24,7 @@ export const prisma =
   new PrismaClient({
     adapter,
   });
-  console.log("DB Config:", {
-  host: process.env.DATABASE_HOST,
-  port: process.env.DATABASE_PORT,
-  user: process.env.DATABASE_USER,
-  database: process.env.DATABASE_NAME,
-});
+  
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
