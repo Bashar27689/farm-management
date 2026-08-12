@@ -48,23 +48,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-.input {
-  width: 100%;
-  padding-left: 1rem;
-  /* px-4 (16px) */
-  padding-right: 1rem;
-  /* px-4 (16px) */
-  padding-top: 0.75rem;
-  /* py-3 (12px) */
-  padding-bottom: 0.75rem;
-  /* py-3 (12px) */
-  border: 1px solid #d1d5db;
-  /* border border-gray-300 */
-  border-radius: 0.75rem;
-  /* rounded-xl (12px) */
-  color: #b45309;
-  /* text-amber-700 */
-}
 
 :root {
   --background: oklch(1 0 0);
