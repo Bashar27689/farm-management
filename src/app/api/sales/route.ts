@@ -1,121 +1,279 @@
+
 // src/app/api/sales/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from "../../../lib/prisma";
 import { getCurrentUser } from '../../../lib/auth';
+import { prisma } from '../../../lib/prisma';
 
 export async function POST(request: NextRequest) {
   const user = getCurrentUser(request);
+
   if (!user) {
-    return NextResponse.json({ message: 'غير مصرح' }, { status: 401 });
+    return NextResponse.json(
+      { message: 'غير مصرح' },
+      { status: 401 }
+    );
   }
 
   try {
-    const { shopName, trayCount, pricePerTray, customerName, customerPhone, date } = await request.json();
+    const body = await request.json();
 
-    if (!shopName || !trayCount || !pricePerTray) {
+    const {
+      shopName,
+      trayCount,
+      pricePerTray,
+      customerId,
+      customerName,
+      customerPhone,
+      date,
+    } = body;
+
+    if (
+      !shopName ||
+      trayCount === undefined ||
+      pricePerTray === undefined
+    ) {
       return NextResponse.json(
-        { message: 'جميع الحقول مطلوبة' },
+        { message: 'جميع الحقول المطلوبة غير مكتملة' },
         { status: 400 }
       );
     }
 
-    const total = parseInt(trayCount) * parseInt(pricePerTray);
-    let customer = null;
+    const parsedTrayCount = Number(trayCount);
+    const parsedPricePerTray = Number(pricePerTray);
 
-    // البحث عن العميل أو إنشاؤه
-    if (customerName && customerPhone) {
-      customer = await prisma.customer.upsert({
-        where: { phone: customerPhone },
-        update: { name: customerName },
-        create: { name: customerName, phone: customerPhone }
-      });
+    if (
+      !Number.isInteger(parsedTrayCount) ||
+      parsedTrayCount <= 0
+    ) {
+      return NextResponse.json(
+        { message: 'عدد الأطباق غير صحيح' },
+        { status: 400 }
+      );
     }
 
-    // إنشاء المبيعات
-    const sales = await prisma.sales.create({
-      data: {
-        shopName,
-        trayCount: parseInt(trayCount),
-        pricePerTray: parseInt(pricePerTray),
-        total,
-        date: date ? new Date(date) : new Date(),
-        customerId: customer?.id || null,
-      },
-      include: { customer: true }
-    });
+    if (
+      !Number.isInteger(parsedPricePerTray) ||
+      parsedPricePerTray <= 0
+    ) {
+      return NextResponse.json(
+        { message: 'سعر الطبق غير صحيح' },
+        { status: 400 }
+      );
+    }
 
-    // إنشاء فاتورة - إصلاح المشكلة
-    const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    
-    // التأكد من وجود customerId
-    let invoiceCustomerId = customer?.id;
-    if (!invoiceCustomerId) {
-      // إذا لم يكن هناك عميل، نستخدم عميل افتراضي أو ننشئ واحد
-      const defaultCustomer = await prisma.customer.upsert({
-        where: { phone: '000000000' },
-        update: {},
-        create: {
-          name: 'عميل نقدي',
-          phone: '000000000'
+    const total =
+      parsedTrayCount * parsedPricePerTray;
+
+    const result = await prisma.$transaction(async (tx) => {
+      let invoiceCustomerId: string;
+
+      /*
+       * 1. عميل موجود
+       */
+      if (
+        typeof customerId === 'string' &&
+        customerId.trim()
+      ) {
+        const existingCustomer =
+          await tx.customer.findUnique({
+            where: {
+              id: customerId,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+        if (!existingCustomer) {
+          throw new Error('CUSTOMER_NOT_FOUND');
         }
-      });
-      invoiceCustomerId = defaultCustomer.id;
-    }
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        number: invoiceNumber,
-        date: sales.date,
-        customerId: invoiceCustomerId,
-        items: JSON.stringify({
-          shopName: sales.shopName,
-          trayCount: sales.trayCount,
-          pricePerTray: sales.pricePerTray,
-        }),
-        total: sales.total,
-        salesId: sales.id,
+        invoiceCustomerId = existingCustomer.id;
       }
-    });
 
-    // تحديث المبيعات برقم الفاتورة
-    await prisma.sales.update({
-      where: { id: sales.id },
-      data: { invoiceId: invoice.id }
-    });
+      /*
+       * 2. عميل جديد
+       */
+      else if (
+        typeof customerName === 'string' &&
+        customerName.trim() &&
+        typeof customerPhone === 'string' &&
+        customerPhone.trim()
+      ) {
+        const customer = await tx.customer.upsert({
+          where: {
+            phone: customerPhone.trim(),
+          },
+          update: {
+            name: customerName.trim(),
+          },
+          create: {
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+          },
+          select: {
+            id: true,
+          },
+        });
 
-    // جلب الفاتورة مع بيانات العميل
-    const fullInvoice = await prisma.invoice.findUnique({
-      where: { id: invoice.id },
-      include: { customer: true }
+        invoiceCustomerId = customer.id;
+      }
+
+      /*
+       * 3. لا يوجد عميل
+       */
+      else {
+        const defaultCustomer =
+          await tx.customer.upsert({
+            where: {
+              phone: '000000000',
+            },
+            update: {},
+            create: {
+              name: 'عميل نقدي',
+              phone: '000000000',
+            },
+            select: {
+              id: true,
+            },
+          });
+
+        invoiceCustomerId = defaultCustomer.id;
+      }
+
+      /*
+       * إنشاء المبيعات
+       */
+      const sales = await tx.sales.create({
+        data: {
+          shopName: String(shopName).trim(),
+          trayCount: parsedTrayCount,
+          pricePerTray: parsedPricePerTray,
+          total,
+          date: date
+            ? new Date(date)
+            : new Date(),
+          customerId: invoiceCustomerId,
+        },
+      });
+
+      /*
+       * إنشاء رقم الفاتورة
+       */
+      const invoiceNumber =
+        `INV-${Date.now()}-${Math.floor(
+          Math.random() * 1000
+        )}`;
+
+      /*
+       * إنشاء الفاتورة
+       */
+      const invoice =
+        await tx.invoice.create({
+          data: {
+            number: invoiceNumber,
+            date: sales.date,
+            customerId: invoiceCustomerId,
+            items: JSON.stringify({
+              shopName: sales.shopName,
+              trayCount: sales.trayCount,
+              pricePerTray:
+                sales.pricePerTray,
+            }),
+            total: sales.total,
+            salesId: sales.id,
+          },
+          include: {
+            customer: true,
+          },
+        });
+
+      /*
+       * ربط الفاتورة بالمبيعات
+       */
+      const updatedSales =
+        await tx.sales.update({
+          where: {
+            id: sales.id,
+          },
+          data: {
+            invoiceId: invoice.id,
+          },
+          include: {
+            customer: true,
+          },
+        });
+
+      return {
+        sales: updatedSales,
+        invoice,
+      };
     });
 
     return NextResponse.json({
       message: 'تم إدخال المبيعات بنجاح',
-      sales,
-      invoice: fullInvoice
+      sales: result.sales,
+      invoice: result.invoice,
     });
-
   } catch (error) {
-    console.error('Error creating sales:', error);
+    console.error(
+      'Error creating sales:',
+      error
+    );
+
+    if (
+      error instanceof Error &&
+      error.message === 'CUSTOMER_NOT_FOUND'
+    ) {
+      return NextResponse.json(
+        { message: 'العميل المحدد غير موجود' },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(
-      { message: 'حدث خطأ في الخادم: ' + (error as Error).message },
+      {
+        message: 'حدث خطأ في الخادم',
+        ...(process.env.NODE_ENV ===
+          'development' &&
+        error instanceof Error
+          ? { error: error.message }
+          : {}),
+      },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest
+) {
   const user = getCurrentUser(request);
+
   if (!user) {
-    return NextResponse.json({ message: 'غير مصرح' }, { status: 401 });
+    return NextResponse.json(
+      { message: 'غير مصرح' },
+      { status: 401 }
+    );
   }
 
   try {
     const url = new URL(request.url);
-    const startDate = url.searchParams.get('startDate');
-    const endDate = url.searchParams.get('endDate');
 
-    const where: any = {};
+    const startDate =
+      url.searchParams.get('startDate');
+
+    const endDate =
+      url.searchParams.get('endDate');
+
+    const where: {
+      date?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    } = {};
+
     if (startDate && endDate) {
       where.date = {
         gte: new Date(startDate),
@@ -123,43 +281,54 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const sales = await prisma.sales.findMany({
-      where,
-      include: { 
-        customer: true, 
-        invoice: {
-          include: { customer: true }
-        } 
-      },
-      orderBy: { date: 'desc' }
-    });
+    const sales =
+      await prisma.sales.findMany({
+        where,
+        include: {
+          customer: true,
+          invoice: {
+            include: {
+              customer: true,
+            },
+          },
+        },
+        orderBy: {
+          date: 'desc',
+        },
+      });
 
-const totalRevenue = sales.reduce(
-  (
-    sum: number,
-    s: { total: number }
-  ) => sum + s.total,
-  0
-);
+    const totalRevenue =
+      sales.reduce(
+        (
+          sum: number,
+          sale: { total: number }
+        ) => sum + sale.total,
+        0
+      );
 
-const totalTrays = sales.reduce(
-  (
-    sum: number,
-    s: { trayCount: number }
-  ) => sum + s.trayCount,
-  0
-);
+    const totalTrays =
+      sales.reduce(
+        (
+          sum: number,
+          sale: { trayCount: number }
+        ) => sum + sale.trayCount,
+        0
+      );
 
     return NextResponse.json({
       sales,
       stats: {
         totalRevenue,
         totalTrays,
-        totalOrders: sales.length
-      }
+        totalOrders: sales.length,
+      },
     });
   } catch (error) {
-    console.error('Error fetching sales:', error);
+    console.error(
+      'Error fetching sales:',
+      error
+    );
+
     return NextResponse.json(
       { message: 'حدث خطأ في الخادم' },
       { status: 500 }
