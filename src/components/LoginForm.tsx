@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import farmLogo from '../../public/assets/farm-Logo.png';
-import Button from '../components/ui/Button';
+import { Button } from '../../@/components/ui/button';
 import Input from '../components/ui/Input';
 
 export default function LoginPage() {
@@ -79,9 +79,11 @@ export default function LoginPage() {
               <Image 
                 src={farmLogo} 
                 alt="Logo" 
+                
                 width={120} 
                 height={120} 
                 className="relative mx-auto w-28 h-28 object-contain"
+                loading="eager"
               />
             </div>
             <h1 
@@ -109,7 +111,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
               required
-              icon={<UserIcon />}
+              //icon={<UserIcon />}
             />
 
             {/* Password Field */}
@@ -121,7 +123,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               required
-              icon={<LockIcon />}
+             // icon={<LockIcon />}
             />
 
             {/* Error Message */}
@@ -142,9 +144,7 @@ export default function LoginPage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              variant="primary"
               size="lg"
-              loading={loading}
               disabled={loading}
               className="w-full"
             >
