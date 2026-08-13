@@ -14,21 +14,27 @@
     "@prisma/adapter-mariadb": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@react-pdf/renderer": "^4.5.1",
+    "@tailwindcss/postcss": "^4.3.3",
     "arabic-persian-reshaper": "^1.0.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "bidi-js": "^1.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.31.0",
     "minimatch": "^10.2.6",
     "next": "16.3.0",
+    "postcss": "^8.5.26",
     "puppeteer": "25.5.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "undici": "^8.9.0",
-    "@tailwindcss/postcss": "^4.3.3",
-    "postcss": "^8.5.26",
-    "tailwindcss": "^4.3.3"
+    "shadcn": "^4.17.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.3",
+    "tw-animate-css": "^1.4.0",
+    "undici": "^8.9.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -61,5 +67,10 @@
     "esbuild@0.28.2": true,
     "unrs-resolver@1.12.2": true,
     "bcrypt": true
+  },
+  "imports": {
+    "#components/*": "./src/components/*.tsx",
+    "#lib/*": "./src/lib/*.ts",
+    "#hooks/*": "./src/hooks/*.ts"
   }
 }
