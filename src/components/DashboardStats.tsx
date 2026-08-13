@@ -1,7 +1,38 @@
-// src/components/DashboardStats.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  ArrowUpLeft,
+  Boxes,
+  CalendarDays,
+  CircleDollarSign,
+  Egg,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Users,
+  Warehouse,
+} from 'lucide-react';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../@/components/ui/card';
+
+import { Badge } from '../../@/components/ui/badge';
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../@/components/ui/table';
 
 export default function DashboardStats() {
   const [data, setData] = useState<any>(null);
@@ -14,10 +45,15 @@ export default function DashboardStats() {
   const fetchDashboard = async () => {
     try {
       const res = await fetch('/api/dashboard');
-      const data = await res.json();
-      setData(data);
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch dashboard');
+      }
+
+      const result = await res.json();
+      setData(result);
     } catch (err) {
-      console.error('Error fetching dashboard');
+      console.error('Error fetching dashboard', err);
     } finally {
       setLoading(false);
     }
@@ -25,160 +61,516 @@ export default function DashboardStats() {
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-md">
-        <p className="text-gray-600">جاري تحميل الإحصائيات...</p>
-      </div>
+      <main
+        dir="rtl"
+        className="min-h-screen bg-[#FDFBF7] p-4 md:p-6"
+      >
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="space-y-2">
+            <div className="h-8 w-48 animate-pulse rounded-lg bg-gray-200" />
+            <div className="h-4 w-72 animate-pulse rounded bg-gray-200" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <Card key={item} className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="h-24 animate-pulse rounded-xl bg-gray-100" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </main>
     );
   }
 
   if (!data) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-md">
-        <p className="text-red-600">حدث خطأ في تحميل البيانات</p>
-      </div>
+      <main
+        dir="rtl"
+        className="min-h-screen bg-[#FDFBF7] p-4 md:p-6"
+      >
+        <div className="mx-auto max-w-7xl">
+          <Card className="border-red-200 bg-white shadow-sm">
+            <CardContent className="flex items-center justify-center p-8">
+              <p className="text-sm font-medium text-red-600">
+                حدث خطأ في تحميل بيانات لوحة التحكم
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     );
   }
 
+  const todayStats = [
+    {
+      title: 'بيض اليوم',
+      value: data.today?.eggs || 0,
+      unit: 'بيضة',
+      icon: Egg,
+      color: '#2E7D32',
+      background: '#E8F5E9',
+    },
+    {
+      title: 'مبيعات اليوم',
+      value: (data.today?.revenue || 0).toLocaleString(),
+      unit: 'ل.س',
+      icon: CircleDollarSign,
+      color: '#EF6C00',
+      background: '#FFF3E0',
+    },
+    {
+      title: 'أطباق اليوم',
+      value: data.today?.trays || 0,
+      unit: 'طبق',
+      icon: Package,
+      color: '#2E7D32',
+      background: '#E8F5E9',
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* إحصائيات اليوم */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl">
-          <div className="text-3xl mb-1">🥚</div>
-          <div className="text-2xl font-bold text-green-700">{data.today?.eggs || 0}</div>
-          <div className="text-gray-600">بيض اليوم</div>
-        </div>
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl">
-          <div className="text-3xl mb-1">💰</div>
-          <div className="text-2xl font-bold text-blue-700">{data.today?.revenue || 0} ل.س</div>
-          <div className="text-gray-600">مبيعات اليوم</div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl">
-          <div className="text-3xl mb-1">📦</div>
-          <div className="text-2xl font-bold text-purple-700">{data.today?.trays || 0}</div>
-          <div className="text-gray-600">أطباق اليوم</div>
-        </div>
-      </div>
+    <main
+      dir="rtl"
+      className="min-h-screen bg-[#FDFBF7] p-4 md:p-6"
+    >
+      <div className="mx-auto max-w-7xl space-y-6">
 
-      {/* إحصائيات عامة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white p-6 rounded-2xl shadow-md">
-          <h3 className="font-bold mb-2 text-amber-600">📊 إحصائيات عامة</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">عدد العملاء</span>
-              <span className="font-bold text-gray-600">{data.total?.customers || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">عدد المستلزمات</span>
-              <span className="font-bold text-gray-600">{data.total?.supplies || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">تكلفة المستلزمات</span>
-              <span className="font-bold text-gray-600">{data.total?.supplyCost || 0} ل.س</span>
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F5E9]">
+                <TrendingUp className="h-5 w-5 text-[#2E7D32]" />
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-bold text-[#374151]">
+                  لوحة التحكم
+                </h1>
+
+                <p className="text-sm text-[#374151]/60">
+                  نظرة سريعة على أداء المزرعة
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* آخر المبيعات */}
-      {data.recent?.sales && data.recent.sales.length > 0 && (
-        <div className="bg-white p-6 rounded-2xl shadow-md">
-          <h3 className="font-bold mb-3 text-amber-600">🔄 آخر المبيعات</h3>
-          <div className="space-y-2">
-            {data.recent.sales.map((sale: any) => (
-              <div key={sale.id} className="flex justify-between items-center border-b pb-2">
-                <div>
-                  <span className="font-medium text-gray-600">{sale.shopName}</span>
-                  <span className="text-gray-500 text-sm mr-2">
-                    ({sale.trayCount} طبق)
+          <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+            <CalendarDays className="h-4 w-4 text-[#2E7D32]" />
+
+            <span className="text-sm font-medium text-[#374151]">
+              {new Date().toLocaleDateString('ar-SY', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+        </div>
+
+        {/* Today */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-1 rounded-full bg-[#2E7D32]" />
+
+            <h2 className="text-lg font-bold text-[#374151]">
+              إحصائيات اليوم
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {todayStats.map((stat) => {
+              const Icon = stat.icon;
+
+              return (
+                <Card
+                  key={stat.title}
+                  className="border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-[#374151]/60">
+                          {stat.title}
+                        </p>
+
+                        <div className="mt-2 flex items-baseline gap-2">
+                          <span
+                            className="text-2xl font-bold"
+                            style={{ color: stat.color }}
+                          >
+                            {stat.value}
+                          </span>
+
+                          <span className="text-sm text-[#374151]/50">
+                            {stat.unit}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        className="flex h-12 w-12 items-center justify-center rounded-xl"
+                        style={{ backgroundColor: stat.background }}
+                      >
+                        <Icon
+                          className="h-6 w-6"
+                          style={{ color: stat.color }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* General Statistics */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-1 rounded-full bg-[#2E7D32]" />
+
+            <h2 className="text-lg font-bold text-[#374151]">
+              الإحصائيات العامة
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+            <Card className="border-gray-100 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F5E9]">
+                    <Users className="h-5 w-5 text-[#2E7D32]" />
+                  </div>
+
+                  <div>
+                    <CardTitle className="text-base text-[#374151]">
+                      العملاء
+                    </CardTitle>
+
+                    <CardDescription>
+                      إجمالي العملاء
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <p className="text-2xl font-bold text-[#2E7D32]">
+                  {data.total?.customers || 0}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-gray-100 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF3E0]">
+                    <Warehouse className="h-5 w-5 text-[#EF6C00]" />
+                  </div>
+
+                  <div>
+                    <CardTitle className="text-base text-[#374151]">
+                      المستلزمات
+                    </CardTitle>
+
+                    <CardDescription>
+                      إجمالي المستلزمات
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <p className="text-2xl font-bold text-[#EF6C00]">
+                  {data.total?.supplies || 0}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-gray-100 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F5E9]">
+                    <CircleDollarSign className="h-5 w-5 text-[#2E7D32]" />
+                  </div>
+
+                  <div>
+                    <CardTitle className="text-base text-[#374151]">
+                      تكلفة المستلزمات
+                    </CardTitle>
+
+                    <CardDescription>
+                      إجمالي التكلفة
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <p className="text-2xl font-bold text-[#2E7D32]">
+                  {(data.total?.supplyCost || 0).toLocaleString()}
+                  <span className="mr-1 text-sm font-normal text-[#374151]/50">
+                    ل.س
                   </span>
-                </div>
-                <div className="text-green-600 font-bold">
-                  {sale.total} ل.س
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                </p>
+              </CardContent>
+            </Card>
 
-      {/* آخر الإنتاج */}
-      {data.recent?.production && data.recent.production.length > 0 && (
-        <div className="bg-white p-6 rounded-2xl shadow-md">
-          <h3 className="font-bold mb-3 text-amber-600">🥚 آخر الإنتاج</h3>
-          <div className="space-y-2">
-            {data.recent.production.map((prod: any) => (
-              <div key={prod.id} className="flex justify-between items-center border-b pb-2">
-                <span className='text-gray-600'>{new Date(prod.date).toLocaleDateString('ar-SY')}</span>
-                <span className="font-bold text-green-600">{prod.eggCount} بيضة</span>
-              </div>
-            ))}
           </div>
-        </div>
-      )}
-      {/* آخر المستلزمات */}
-   {data.recent?.supplies && data.recent.supplies.length > 0 && (
-  <div className="bg-white p-6 rounded-2xl shadow-md">
-    <h3 className="font-bold mb-3 text-amber-600">📦 آخر المستلزمات</h3>
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="bg-amber-50 border-b-2 border-amber-200">
-            <th className="p-3 text-right text-sm font-bold text-amber-700">التاريخ</th>
-            <th className="p-3 text-right text-sm font-bold text-amber-700">النوع</th>
-            <th className="p-3 text-right text-sm font-bold text-amber-700">المورد</th>
-            <th className="p-3 text-right text-sm font-bold text-amber-700">الكمية</th>
-            <th className="p-3 text-right text-sm font-bold text-amber-700">السعر</th>
-            <th className="p-3 text-right text-sm font-bold text-amber-700">المجموع</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.recent.supplies.map((supply: any) => (
-            <tr key={supply.id} className="border-b hover:bg-gray-50 transition">
-              <td className="p-3 text-gray-600 text-sm">
-                {new Date(supply.date).toLocaleDateString('ar-SY')}
-              </td>
-              <td className="p-3">
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  supply.type === 'FEED' 
-                    ? 'bg-green-100 text-green-700' 
-                    : supply.type === 'VACCINE' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
-                  {supply.type === 'FEED' ? 'علف' : supply.type === 'VACCINE' ? 'لقاح' : 'أخرى'}
-                </span>
-              </td>
-              <td className="p-3 font-medium text-gray-800">
-                {supply.name}
-              </td>
-              <td className="p-3 font-bold text-amber-600">
-                {supply.quantity} {supply.type === 'FEED' ? 'كجم' : 'وحدة'}
-              </td>
-              <td className="p-3 font-bold text-green-600">
-                {supply.price.toLocaleString()} ل.س
-              </td>
-              <td className="p-3 font-bold text-purple-600">
-                {(supply.quantity * supply.price).toLocaleString()} ل.س
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot className="bg-amber-50 border-t-2 border-amber-200">
-          <tr>
-            <td colSpan={5} className="p-3 text-left font-bold text-amber-700">
-              إجمالي التكلفة
-            </td>
-            <td className="p-3 font-bold text-purple-700">
-              {data.recent.supplies.reduce((sum: number, s: any) => sum + (s.quantity * s.price), 0).toLocaleString()} ل.س
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-)}
-    </div>
+        </section>
+
+        {/* Recent Sales */}
+        {data.recent?.sales?.length > 0 && (
+          <Card className="border-gray-100 bg-white shadow-sm">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF3E0]">
+                    <ShoppingCart className="h-5 w-5 text-[#EF6C00]" />
+                  </div>
+
+                  <div>
+                    <CardTitle className="text-lg text-[#374151]">
+                      آخر المبيعات
+                    </CardTitle>
+
+                    <CardDescription>
+                      أحدث عمليات البيع
+                    </CardDescription>
+                  </div>
+                </div>
+
+                <ArrowUpLeft className="h-5 w-5 text-[#374151]/30" />
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="divide-y divide-gray-100">
+                {data.recent.sales.map((sale: any) => (
+                  <div
+                    key={sale.id}
+                    className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-[#FDFBF7]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F5E9]">
+                        <ShoppingCart className="h-4 w-4 text-[#2E7D32]" />
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-[#374151]">
+                          {sale.shopName}
+                        </p>
+
+                        <p className="text-xs text-[#374151]/50">
+                          {sale.trayCount} طبق
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="font-bold text-[#2E7D32]">
+                      {sale.total.toLocaleString()} ل.س
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recent Production */}
+        {data.recent?.production?.length > 0 && (
+          <Card className="border-gray-100 bg-white shadow-sm">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F5E9]">
+                  <Egg className="h-5 w-5 text-[#2E7D32]" />
+                </div>
+
+                <div>
+                  <CardTitle className="text-lg text-[#374151]">
+                    آخر الإنتاج
+                  </CardTitle>
+
+                  <CardDescription>
+                    أحدث عمليات إنتاج البيض
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="divide-y divide-gray-100">
+                {data.recent.production.map((prod: any) => (
+                  <div
+                    key={prod.id}
+                    className="flex items-center justify-between gap-4 p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F5E9]">
+                        <Egg className="h-4 w-4 text-[#2E7D32]" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium text-[#374151]">
+                          {new Date(prod.date).toLocaleDateString('ar-SY')}
+                        </p>
+
+                        <p className="text-xs text-[#374151]/50">
+                          تاريخ الإنتاج
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="font-bold text-[#2E7D32]">
+                      {prod.eggCount.toLocaleString()} بيضة
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recent Supplies */}
+        {data.recent?.supplies?.length > 0 && (
+          <Card className="overflow-hidden border-gray-100 bg-white shadow-sm">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF3E0]">
+                  <Boxes className="h-5 w-5 text-[#EF6C00]" />
+                </div>
+
+                <div>
+                  <CardTitle className="text-lg text-[#374151]">
+                    آخر المستلزمات
+                  </CardTitle>
+
+                  <CardDescription>
+                    أحدث المشتريات والمستلزمات
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[#FDFBF7] hover:bg-[#FDFBF7]">
+                      <TableHead className="text-right font-bold text-[#374151]">
+                        التاريخ
+                      </TableHead>
+
+                      <TableHead className="text-right font-bold text-[#374151]">
+                        النوع
+                      </TableHead>
+
+                      <TableHead className="text-right font-bold text-[#374151]">
+                        المورد
+                      </TableHead>
+
+                      <TableHead className="text-right font-bold text-[#374151]">
+                        الكمية
+                      </TableHead>
+
+                      <TableHead className="text-right font-bold text-[#374151]">
+                        السعر
+                      </TableHead>
+
+                      <TableHead className="text-right font-bold text-[#374151]">
+                        المجموع
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+
+                  <TableBody>
+                    {data.recent.supplies.map((supply: any) => (
+                      <TableRow
+                        key={supply.id}
+                        className="hover:bg-[#FDFBF7]"
+                      >
+                        <TableCell className="text-sm text-[#374151]/70">
+                          {new Date(supply.date).toLocaleDateString('ar-SY')}
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              supply.type === 'FEED'
+                                ? 'border-[#2E7D32]/30 bg-[#E8F5E9] text-[#2E7D32]'
+                                : supply.type === 'VACCINE'
+                                  ? 'border-[#EF6C00]/30 bg-[#FFF3E0] text-[#EF6C00]'
+                                  : 'border-gray-200 bg-gray-50 text-[#374151]'
+                            }
+                          >
+                            {supply.type === 'FEED'
+                              ? 'علف'
+                              : supply.type === 'VACCINE'
+                                ? 'لقاح'
+                                : 'أخرى'}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell className="font-medium text-[#374151]">
+                          {supply.name}
+                        </TableCell>
+
+                        <TableCell className="font-medium text-[#374151]">
+                          {supply.quantity}{' '}
+                          <span className="text-xs font-normal text-[#374151]/50">
+                            {supply.type === 'FEED' ? 'كجم' : 'وحدة'}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="font-semibold text-[#2E7D32]">
+                          {supply.price.toLocaleString()} ل.س
+                        </TableCell>
+
+                        <TableCell className="font-bold text-[#EF6C00]">
+                          {(
+                            supply.quantity * supply.price
+                          ).toLocaleString()}{' '}
+                          ل.س
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+
+                  <TableFooter>
+                    <TableRow className="bg-[#FDFBF7] hover:bg-[#FDFBF7]">
+                      <TableCell
+                        colSpan={5}
+                        className="text-left font-bold text-[#374151]"
+                      >
+                        إجمالي التكلفة
+                      </TableCell>
+
+                      <TableCell className="font-bold text-[#EF6C00]">
+                        {data.recent.supplies
+                          .reduce(
+                            (sum: number, s: any) =>
+                              sum + s.quantity * s.price,
+                            0
+                          )
+                          .toLocaleString()}{' '}
+                        ل.س
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+      </div>
+    </main>
   );
 }
