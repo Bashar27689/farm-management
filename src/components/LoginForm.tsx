@@ -106,7 +106,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pr-10 py-3 rounded-xl transition-all duration-300 focus:ring-2"
+                  className="h-13 pr-11 pl-4 rounded-xl transition-all duration-300 focus:ring-2 text-base"
                   style={{
                     backgroundColor: '#FDFBF7',
                     borderColor: '#E5E7EB',
@@ -149,7 +149,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pr-10 pl-10 py-3 rounded-xl transition-all duration-300 focus:ring-2"
+                  className="h-13 pr-11 pl-4 rounded-xl transition-all duration-300 focus:ring-2 text-base"
                   style={{
                     backgroundColor: '#FDFBF7',
                     borderColor: '#E5E7EB',
@@ -207,7 +207,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
+              className="w-full py-3.5 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group h-13"
               style={{
                 backgroundColor: '#2E7D32',
                 color: '#FFFFFF',
