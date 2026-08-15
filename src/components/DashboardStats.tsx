@@ -33,14 +33,14 @@ import {
   TableHeader,
   TableRow,
 } from '../../@/components/ui/table';
+import Link from 'next/link';
 
 export default function DashboardStats() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+
 
   const fetchDashboard = async () => {
     try {
@@ -57,8 +57,11 @@ export default function DashboardStats() {
     } finally {
       setLoading(false);
     }
-  };
+    };
 
+    fetchDashboard()
+  }, []);
+  
   if (loading) {
     return (
       <main
@@ -345,8 +348,7 @@ export default function DashboardStats() {
                     </CardDescription>
                   </div>
                 </div>
-
-                <ArrowUpLeft className="h-5 w-5 text-[#374151]/30" />
+                  <ArrowUpLeft className="h-5 w-5 text-[#374151]/30" />
               </div>
             </CardHeader>
 
@@ -472,10 +474,6 @@ export default function DashboardStats() {
                       </TableHead>
 
                       <TableHead className="text-right font-bold text-[#374151]">
-                        المورد
-                      </TableHead>
-
-                      <TableHead className="text-right font-bold text-[#374151]">
                         الكمية
                       </TableHead>
 
@@ -519,10 +517,6 @@ export default function DashboardStats() {
                         </TableCell>
 
                         <TableCell className="font-medium text-[#374151]">
-                          {supply.name}
-                        </TableCell>
-
-                        <TableCell className="font-medium text-[#374151]">
                           {supply.quantity}{' '}
                           <span className="text-xs font-normal text-[#374151]/50">
                             {supply.type === 'FEED' ? 'كجم' : 'وحدة'}
@@ -546,7 +540,7 @@ export default function DashboardStats() {
                   <TableFooter>
                     <TableRow className="bg-[#FDFBF7] hover:bg-[#FDFBF7]">
                       <TableCell
-                        colSpan={5}
+                        colSpan={4}
                         className="text-left font-bold text-[#374151]"
                       >
                         إجمالي التكلفة

@@ -152,10 +152,10 @@ export default function DashboardPage() {
       dir="rtl"
       className="min-h-screen bg-[#FDFBF7]"
     >
-      <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 md:py-6">
+      <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 md:py-6 ">
 
         {/* Header */}
-        <Card className="mb-6 border-gray-100 bg-white shadow-sm">
+        <Card className="mb-6 bg-[#ef6c00a1] shadow-sm ">
           <CardContent className="p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -164,7 +164,7 @@ export default function DashboardPage() {
                 <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-[#E8F5E9]">
                   <Image
                     src={farmLogo}
-                    alt="بيض الريف"
+                    alt="بيض المراعي"
                     width={48}
                     height={48}
                     className="h-12 w-12 object-contain"
@@ -218,7 +218,7 @@ export default function DashboardPage() {
                   className="gap-2 rounded-xl border-gray-200 bg-white text-[#374151] transition-all hover:border-[#EF6C00]/30 hover:bg-[#FFF3E0] hover:text-[#EF6C00]"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">
+                  <span className="sm:inline">
                     تسجيل الخروج
                   </span>
                 </Button>
@@ -229,10 +229,10 @@ export default function DashboardPage() {
         </Card>
 
         {/* Navigation */}
-        <Card className="mb-6 border-gray-100 bg-white shadow-sm">
-          <CardContent className="p-2">
+        <Card className="mb-6  bg-white  ">
+          <CardContent className="p-2 bg-sky-300/20 rounded-xl">
             <nav
-              className="flex gap-2 overflow-x-auto"
+              className="flex gap-2 overflow-x-auto rounded-xl"
               aria-label="التنقل الرئيسي"
             >
               {tabs.map((tab) => {
@@ -246,10 +246,10 @@ export default function DashboardPage() {
                     variant="ghost"
                     onClick={() => setActiveTab(tab.id)}
                     className={[
-                      'shrink-0 gap-2 rounded-xl px-4 py-2.5 transition-all duration-200',
+                      'shrink-0 gap-2 rounded-xl px-4 py- transition-all duration-200 ',
                       isActive
                         ? 'bg-[#2E7D32] text-white shadow-sm hover:bg-[#2E7D32] hover:text-white'
-                        : 'text-[#374151] hover:bg-[#FDFBF7] hover:text-[#2E7D32]',
+                        : 'text-[#374151] hover:bg-[#FDFBF7] hover:text-[#2E7D32] ',
                     ].join(' ')}
                   >
                     <Icon className="h-4 w-4" />
@@ -265,7 +265,7 @@ export default function DashboardPage() {
         <section>
           {activeTab === 'stats' &&
             user?.role === 'ADMIN' && (
-              <DashboardStats />
+            <DashboardStats />
             )}
 
           {activeTab === 'production' && (

@@ -2,7 +2,28 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  CalendarDays,
+  Egg,
+  Loader2,
+  Save,
+} from 'lucide-react';
 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../@/components/ui/card';
+
+import { Button } from '../../@/components/ui/button';
+import { Input } from '../../@/components/ui/input';
+import { Label } from '../../@/components/ui/label';
+import {
+  Alert,
+  AlertDescription,
+} from '../../@/components/ui/alert';
 export default function ProductionForm() {
   const [eggCount, setEggCount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -37,49 +58,115 @@ export default function ProductionForm() {
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-amber-700">🥚 إدخال الإنتاج اليومي</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2 ">عدد البيض المنتج</label>
-          <input
+     <Card className="border-gray-100 bg-white shadow-sm">
+  <CardHeader className="pb-4">
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF3E0]">
+        <Egg className="h-5 w-5 text-[#EF6C00]" />
+      </div>
+
+      <div>
+        <CardTitle className="text-xl font-bold text-[#EF6C00]">
+          إدخال الإنتاج اليومي
+        </CardTitle>
+
+        <CardDescription className="mt-1 text-[#374151]/60">
+          تسجيل كمية البيض المنتج خلال اليوم
+        </CardDescription>
+      </div>
+    </div>
+  </CardHeader>
+
+  <CardContent>
+    <form onSubmit={handleSubmit} className="space-y-5">
+
+      {/* عدد البيض */}
+      <div className="space-y-2">
+        <Label
+          htmlFor="eggCount"
+          className="font-medium text-[#374151]"
+        >
+          عدد البيض المنتج
+        </Label>
+
+        <div className="relative">
+          <Egg className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#2E7D32]" />
+
+          <Input
+            id="eggCount"
             type="number"
             value={eggCount}
             onChange={(e) => setEggCount(e.target.value)}
-              className="input"
             required
             disabled={loading}
             placeholder="مثال: 300"
+            min="1"
+            className="h-12 rounded-xl border-gray-200 bg-[#FDFBF7] pr-10 text-[#374151] transition-all placeholder:text-gray-400 focus-visible:border-[#2E7D32] focus-visible:ring-[#2E7D32]/20"
           />
         </div>
+      </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">التاريخ</label>
-          <input
+      {/* التاريخ */}
+      <div className="space-y-2">
+        <Label
+          htmlFor="productionDate"
+          className="font-medium text-[#374151]"
+        >
+          التاريخ
+        </Label>
+
+        <div className="relative">
+          <CalendarDays className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#2E7D32]" />
+
+          <Input
+            id="productionDate"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-              className="input"
             required
             disabled={loading}
+            className="h-12 rounded-xl border-gray-200 bg-[#FDFBF7] pr-10 text-[#374151] transition-all focus-visible:border-[#2E7D32] focus-visible:ring-[#2E7D32]/20"
           />
         </div>
+      </div>
 
-        {message && (
-          <div className={`mb-4 p-3 rounded-xl text-sm ${
-            message.startsWith('✅') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-          }`}>
-            {message}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          className="w-full bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition disabled:opacity-50"
-          disabled={loading}
+      {/* الرسالة */}
+      {message && (
+        <Alert
+          className={
+            message.startsWith('✅')
+              ? 'rounded-xl border-[#2E7D32]/20 bg-[#E8F5E9] text-[#2E7D32]'
+              : 'rounded-xl border-[#EF6C00]/20 bg-[#FFF3E0] text-[#EF6C00]'
+          }
         >
-          {loading ? 'جاري الحفظ...' : 'حفظ الإنتاج'}
-        </button>
-      </form>
+          <AlertDescription className="text-sm font-medium">
+            {message}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* زر الحفظ */}
+      <Button
+        type="submit"
+        disabled={loading}
+        className="h-12 w-full rounded-xl bg-[#2E7D32] text-white transition-all duration-300 hover:bg-[#2E7D32]/90 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            جاري الحفظ...
+          </>
+        ) : (
+          <>
+            <Save className="h-5 w-5" />
+            حفظ الإنتاج
+          </>
+        )}
+      </Button>
+
+    </form>
+  </CardContent>
+</Card>
     </div>
   );
 }
