@@ -10,6 +10,9 @@ const WHATSAPP_API_URL =
   `https://graph.facebook.com/${WHATSAPP_API_VERSION}`;
 
 
+/**
+ * التحقق من إعدادات WhatsApp
+ */
 function checkWhatsAppConfig() {
   if (!WHATSAPP_ACCESS_TOKEN) {
     throw new Error(
@@ -38,17 +41,26 @@ export async function sendWhatsAppText(
     `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
     {
       method: "POST",
+
       headers: {
         Authorization:
           `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+
         "Content-Type":
           "application/json",
       },
+
       body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
+        messaging_product:
+          "whatsapp",
+
+        recipient_type:
+          "individual",
+
         to,
+
         type: "text",
+
         text: {
           preview_url: false,
           body: message,
@@ -57,7 +69,8 @@ export async function sendWhatsAppText(
     }
   );
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     console.error(
@@ -76,6 +89,29 @@ export async function sendWhatsAppText(
 
 
 /**
+ * تحويل Buffer إلى ArrayBuffer
+ *
+ * هذا ضروري للتوافق مع
+ * TypeScript + Node.js الحديثة
+ */
+function bufferToArrayBuffer(
+  buffer: Buffer
+): ArrayBuffer {
+  const arrayBuffer =
+    new ArrayBuffer(
+      buffer.byteLength
+    );
+
+  const view =
+    new Uint8Array(arrayBuffer);
+
+  view.set(buffer);
+
+  return arrayBuffer;
+}
+
+
+/**
  * رفع ملف إلى WhatsApp
  */
 async function uploadWhatsAppMedia(
@@ -85,14 +121,25 @@ async function uploadWhatsAppMedia(
 ) {
   checkWhatsAppConfig();
 
-  const formData = new FormData();
+  const formData =
+    new FormData();
 
-  const blob = new Blob(
-    [file],
-    {
-      type: mimeType,
-    }
-  );
+
+  /**
+   * تحويل Buffer إلى ArrayBuffer
+   */
+  const arrayBuffer =
+    bufferToArrayBuffer(file);
+
+
+  const blob =
+    new Blob(
+      [arrayBuffer],
+      {
+        type: mimeType,
+      }
+    );
+
 
   formData.append(
     "file",
@@ -100,10 +147,12 @@ async function uploadWhatsAppMedia(
     filename
   );
 
+
   formData.append(
     "messaging_product",
     "whatsapp"
   );
+
 
   formData.append(
     "type",
@@ -111,17 +160,20 @@ async function uploadWhatsAppMedia(
   );
 
 
-  const response = await fetch(
-    `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_NUMBER_ID}/media`,
-    {
-      method: "POST",
-      headers: {
-        Authorization:
-          `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-      },
-      body: formData,
-    }
-  );
+  const response =
+    await fetch(
+      `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_NUMBER_ID}/media`,
+      {
+        method: "POST",
+
+        headers: {
+          Authorization:
+            `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+        },
+
+        body: formData,
+      }
+    );
 
 
   const data =
@@ -157,7 +209,9 @@ export async function sendWhatsAppDocument(
   checkWhatsAppConfig();
 
 
-  // رفع PDF إلى Meta
+  /**
+   * رفع PDF إلى Meta
+   */
   const media =
     await uploadWhatsAppMedia(
       file,
@@ -177,44 +231,54 @@ export async function sendWhatsAppDocument(
   }
 
 
-  // إرسال PDF للمستلم
-  const response = await fetch(
-    `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
-    {
-      method: "POST",
-
-      headers: {
-        Authorization:
-          `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-
-        "Content-Type":
-          "application/json",
-      },
-
-      body: JSON.stringify({
-        messaging_product:
-          "whatsapp",
-
-        recipient_type:
-          "individual",
-
-        to,
-
-        type: "document",
-
-        document: {
-          id: mediaId,
-          filename,
-
-          ...(caption
-            ? {
-                caption,
-              }
-            : {}),
-        },
-      }),
-    }
+  console.log(
+    "WhatsApp media uploaded:",
+    mediaId
   );
+
+
+  /**
+   * إرسال PDF للمستلم
+   */
+  const response =
+    await fetch(
+      `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      {
+        method: "POST",
+
+        headers: {
+          Authorization:
+            `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+
+          "Content-Type":
+            "application/json",
+        },
+
+        body: JSON.stringify({
+          messaging_product:
+            "whatsapp",
+
+          recipient_type:
+            "individual",
+
+          to,
+
+          type: "document",
+
+          document: {
+            id: mediaId,
+
+            filename,
+
+            ...(caption
+              ? {
+                  caption,
+                }
+              : {}),
+          },
+        }),
+      }
+    );
 
 
   const data =
@@ -232,6 +296,12 @@ export async function sendWhatsAppDocument(
         "Failed to send WhatsApp document"
     );
   }
+
+
+  console.log(
+    "WhatsApp document sent:",
+    data
+  );
 
 
   return data;

@@ -142,14 +142,24 @@ async function uploadWhatsAppDocument(
     new FormData();
 
 
-  const blob =
-    new Blob(
-      [pdf],
-      {
-        type: "application/pdf",
-      }
-    );
+const pdfBytes = new Uint8Array(
+  pdf.length
+);
 
+pdf.copy(pdfBytes);
+
+const pdfBuffer =
+  pdfBytes.buffer.slice(
+    pdfBytes.byteOffset,
+    pdfBytes.byteOffset + pdfBytes.byteLength
+  );
+
+const blob = new Blob(
+  [pdfBuffer],
+  {
+    type: "application/pdf",
+  }
+);
 
   formData.append(
     "file",
