@@ -234,7 +234,7 @@ function generateInvoiceHtml(
 
   const signature =
     getImageBase64(
-      "public/assets/signature.png"
+      "public/assets/farm Logo.png"
     );
 
 
