@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Users,
+  Receipt
 } from 'lucide-react';
 
 import ProductionForm from '../../components/ProductionForm';
@@ -20,6 +21,7 @@ import SalesForm from '../../components/SalesForm';
 import SupplyForm from '../../components/SupplyForm';
 import UsersManagement from '../../components/UsersManagement';
 import DashboardStats from '../../components/DashboardStats';
+import InvoiceList from '#components/InvoiceList';
 
 import farmLogo from '../../../public/assets/farm Logo.png';
 
@@ -37,7 +39,8 @@ type TabId =
   | 'production'
   | 'sales'
   | 'supplies'
-  | 'users';
+  | 'users'
+  | 'invoiceslist'
 
 type User = {
   id?: string;
@@ -130,6 +133,11 @@ export default function DashboardPage() {
       label: 'المستلزمات',
       icon: Package,
     },
+    {
+      id: 'invoiceslist' as TabId,
+      label: 'الفواتير',
+      icon: Receipt ,
+    }
   ];
 
   if (user?.role === 'ADMIN') {
@@ -278,6 +286,9 @@ export default function DashboardPage() {
 
           {activeTab === 'supplies' && (
             <SupplyForm />
+          )}
+           {activeTab === 'invoiceslist' && (
+            <InvoiceList />
           )}
 
           {activeTab === 'users' &&

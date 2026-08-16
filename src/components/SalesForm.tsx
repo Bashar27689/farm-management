@@ -33,115 +33,367 @@ import {
   Alert,
   AlertDescription,
 } from '../../@/components/ui/alert'
+
+type Customer = {
+  id: number;
+  name: string;
+  phone?: string | null;
+};
+
+type Invoice = {
+  id: number;
+  number: string;
+};
+
+type FormData = {
+  shopName: string;
+  trayCount: string;
+  pricePerTray: string;
+  customerName: string;
+  customerPhone: string;
+  date: string;
+};
+
+const getLocalDate = () => {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const initialFormData = (): FormData => ({
+  shopName: "",
+  trayCount: "",
+  pricePerTray: "",
+  customerName: "",
+  customerPhone: "",
+  date: getLocalDate(),
+});
+
 export default function SalesForm() {
-  const [formData, setFormData] = useState({
-    shopName: '',
-    trayCount: '',
-    pricePerTray: '',
-    customerName: '',
-    customerPhone: '',
-    date: new Date().toISOString().split('T')[0]
-  });
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [formData, setFormData] = useState<FormData>(initialFormData());
+
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
+
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [lastInvoice, setLastInvoice] = useState<any>(null);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
-    useEffect(() => {
-    fetchCustomers();
-    }, []);
+  const [message, setMessage] = useState("");
+  const [lastInvoice, setLastInvoice] = useState<Invoice | null>(null);
 
+  /**
+   * جلب العملاء
+   */
   const fetchCustomers = async () => {
+    setLoadingCustomers(true);
+
     try {
-      const res = await fetch('/api/customers');
+      const res = await fetch("/api/customers", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch customers");
+      }
+
       const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid customers response");
+      }
+
       setCustomers(data);
-    } catch (err) {
-      console.error('Error fetching customers');
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      setCustomers([]);
+    } finally {
+      setLoadingCustomers(false);
     }
   };
 
+  /**
+   * تحميل العملاء عند فتح الصفحة
+   */
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
-  
-  const handleSubmit = async (e: React.FormEvent) => {
+  /**
+   * تغيير حقول النموذج
+   */
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  /**
+   * تغيير العميل المختار
+   */
+  const handleCustomerChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const customerId = e.target.value;
+
+    setSelectedCustomer(customerId);
+
+    /**
+     * إذا تم اختيار عميل موجود
+     * يمكن ملء بياناته تلقائيًا
+     */
+    if (customerId) {
+      const customer = customers.find(
+        (item) => String(item.id) === customerId
+      );
+
+      if (customer) {
+        setFormData((prev) => ({
+          ...prev,
+          customerName: customer.name,
+          customerPhone: customer.phone ?? "",
+        }));
+      }
+    } else {
+      /**
+       * في حالة اختيار "عميل جديد"
+       */
+      setFormData((prev) => ({
+        ...prev,
+        customerName: "",
+        customerPhone: "",
+      }));
+    }
+  };
+
+  /**
+   * إرسال المبيعات
+   */
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    setMessage("");
     setLoading(true);
-    setMessage('');
+    setLastInvoice(null);
 
     try {
+      /**
+       * التحقق من الحقول الأساسية
+       */
+      if (!formData.shopName.trim()) {
+        setMessage("❌ يرجى إدخال اسم المحل");
+        return;
+      }
+
+      if (!formData.trayCount.trim()) {
+        setMessage("❌ يرجى إدخال عدد الأطباق");
+        return;
+      }
+
+      if (!formData.pricePerTray.trim()) {
+        setMessage("❌ يرجى إدخال سعر الطبق");
+        return;
+      }
+
+      const trayCount = Number(formData.trayCount);
+      const pricePerTray = Number(formData.pricePerTray);
+
+      /**
+       * التحقق من الأرقام
+       */
+      if (!Number.isInteger(trayCount) || trayCount <= 0) {
+        setMessage("❌ عدد الأطباق يجب أن يكون رقمًا صحيحًا أكبر من صفر");
+        return;
+      }
+
+      if (!Number.isFinite(pricePerTray) || pricePerTray <= 0) {
+        setMessage("❌ سعر الطبق يجب أن يكون رقمًا أكبر من صفر");
+        return;
+      }
+
+      /**
+       * التحقق من بيانات العميل
+       */
+      if (!selectedCustomer) {
+        if (!formData.customerName.trim()) {
+          setMessage("❌ يرجى إدخال اسم العميل");
+          return;
+        }
+      }
+
+      /**
+       * إنشاء Payload واضح
+       */
       const payload = {
-        ...formData,
-        trayCount: parseInt(formData.trayCount),
-        pricePerTray: parseInt(formData.pricePerTray),
-        customerName: selectedCustomer ? undefined : formData.customerName,
-        customerPhone: selectedCustomer ? undefined : formData.customerPhone,
+        shopName: formData.shopName.trim(),
+        trayCount,
+        pricePerTray,
+        date: formData.date,
+
+        ...(selectedCustomer
+          ? {
+              customerId: Number(selectedCustomer),
+            }
+          : {
+              customerName: formData.customerName.trim(),
+              customerPhone: formData.customerPhone.trim(),
+            }),
       };
 
-      const res = await fetch('/api/sales', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/sales", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        setMessage('✅ تم إدخال المبيعات بنجاح');
-        setLastInvoice(data.invoice); // حفظ بيانات الفاتورة
-        setFormData({
-          shopName: '',
-          trayCount: '',
-          pricePerTray: '',
-          customerName: '',
-          customerPhone: '',
-          date: new Date().toISOString().split('T')[0]
-        });
-        setSelectedCustomer('');
-        fetchCustomers();
-      } else {
-        setMessage('❌ ' + data.message);
+      let data: any = null;
+
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
       }
-    } catch (err) {
-      setMessage('❌ حدث خطأ في الاتصال');
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message || "حدث خطأ أثناء إدخال المبيعات"
+        );
+      }
+
+      /**
+       * التأكد من وجود بيانات الفاتورة
+       */
+      if (data?.invoice) {
+        setLastInvoice(data.invoice);
+      }
+
+      setMessage("✅ تم إدخال المبيعات بنجاح");
+
+      /**
+       * إعادة ضبط النموذج
+       */
+      setFormData(initialFormData());
+      setSelectedCustomer("");
+
+      /**
+       * تحديث قائمة العملاء
+       */
+      await fetchCustomers();
+    } catch (error) {
+      console.error("Error creating sale:", error);
+
+      setMessage(
+        error instanceof Error
+          ? `❌ ${error.message}`
+          : "❌ حدث خطأ غير متوقع"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // دالة تنزيل PDF
-  const downloadPDF = async () => {
+  /**
+   * تنزيل الفاتورة PDF
+   */
+  /*const downloadPDF = async () => {
     if (!lastInvoice) {
-      alert('لا توجد فاتورة للتنزيل');
+      alert("لا توجد فاتورة للتنزيل");
       return;
     }
 
+    setDownloadingPDF(true);
+
+    let url: string | null = null;
+
     try {
-      const res = await fetch('/api/invoice-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoiceId: lastInvoice.id }),
+      const res = await fetch("/api/invoice-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          invoiceId: lastInvoice.id,
+        }),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to generate PDF');
+        let errorMessage = "فشل إنشاء ملف PDF";
+
+        try {
+          const data = await res.json();
+
+          if (data?.message) {
+            errorMessage = data.message;
+          }
+        } catch {
+          // تجاهل الخطأ إذا لم تكن الاستجابة JSON
+        }
+
+        throw new Error(errorMessage);
       }
 
-      // تحميل الملف
+      const contentType = res.headers.get("content-type");
+
+      if (!contentType?.includes("application/pdf")) {
+        throw new Error("الخادم لم يُرجع ملف PDF");
+      }
+
+     
+       // تحويل الاستجابة إلى Blob
+       
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+
+      if (!blob.size) {
+        throw new Error("ملف PDF فارغ");
+      }
+
+      
+      // إنشاء رابط مؤقت للملف
+      
+      url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
       link.href = url;
       link.download = `invoice-${lastInvoice.number}.pdf`;
+
       document.body.appendChild(link);
+
       link.click();
+
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('حدث خطأ في تحميل الفاتورة');
+      console.error("Error downloading PDF:", error);
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "حدث خطأ في تحميل الفاتورة"
+      );
+    } finally {
+      
+     // تحرير الرابط المؤقت
+       
+      if (url) {
+        window.URL.revokeObjectURL(url);
+      }
+
+      setDownloadingPDF(false);
     }
   };
-
+*/
   return (
     <div className="bg-white p-6 rounded-2xl shadow-md">
       <Card className="border-gray-100 bg-white shadow-sm">
@@ -450,7 +702,8 @@ export default function SalesForm() {
     </form>
 
     {/* الفاتورة */}
-    {lastInvoice && (
+    
+    {/* {lastInvoice && (
       <Card className="mt-5 border-[#2E7D32]/20 bg-[#E8F5E9] shadow-none">
         <CardContent className="p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -491,7 +744,7 @@ export default function SalesForm() {
           </div>
         </CardContent>
       </Card>
-    )}
+    )} */}
   </CardContent>
 </Card>
     </div>
