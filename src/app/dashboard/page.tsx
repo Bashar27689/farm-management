@@ -23,7 +23,7 @@ import UsersManagement from '../../components/UsersManagement';
 import DashboardStats from '../../components/DashboardStats';
 import InvoiceList from '#components/InvoiceList';
 
-import farmLogo from '../../../public/assets/farm Logo.png';
+import farmLogo from '../../../public/assets/farm-Logo.png';
 
 import {
   Card,

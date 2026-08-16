@@ -228,13 +228,13 @@ function generateInvoiceHtml(
 
   const logo =
     getImageBase64(
-      "public/assets/farm Logo.png"
+      "public/assets/farm-Logo.png"
     );
 
 
   const signature =
     getImageBase64(
-      "public/assets/farm Logo.png"
+      "public/assets/Signature.png"
     );
 
 
