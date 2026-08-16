@@ -1,5 +1,3 @@
-// src/lib/generateInvoicePdf.ts
-
 import fs from "fs";
 import path from "path";
 
@@ -17,34 +15,83 @@ type InvoicePdfInput = {
 // Image → Base64
 // =====================================================
 
-function getImageBase64(filePath: string): string {
-  try {
-    const absolutePath = path.join(
-      process.cwd(),
-      filePath
-    );
+function getImageBase64(
+  filePath: string
+): string {
 
-    if (!fs.existsSync(absolutePath)) {
+  try {
+
+    const absolutePath =
+      path.join(
+        process.cwd(),
+        filePath
+      );
+
+
+    if (
+      !fs.existsSync(
+        absolutePath
+      )
+    ) {
+
       console.warn(
-        `PDF Asset not found: ${absolutePath}`
+        "PDF Asset not found:",
+        absolutePath
       );
 
       return "";
     }
 
-    const buffer = fs.readFileSync(
-      absolutePath
+
+    const buffer =
+      fs.readFileSync(
+        absolutePath
+      );
+
+
+    const extension =
+      path
+        .extname(filePath)
+        .replace(".", "")
+        .toLowerCase();
+
+
+    let mimeType =
+      "image/png";
+
+
+    if (
+      extension === "jpg" ||
+      extension === "jpeg"
+    ) {
+
+      mimeType =
+        "image/jpeg";
+
+    } else if (
+      extension === "webp"
+    ) {
+
+      mimeType =
+        "image/webp";
+
+    } else if (
+      extension === "svg"
+    ) {
+
+      mimeType =
+        "image/svg+xml";
+
+    }
+
+
+    return (
+      `data:${mimeType};base64,` +
+      buffer.toString("base64")
     );
 
-    const ext = path
-      .extname(filePath)
-      .replace(".", "")
-      .toLowerCase();
-
-    return `data:image/${ext};base64,${buffer.toString(
-      "base64"
-    )}`;
   } catch (error) {
+
     console.error(
       "PDF Image Error:",
       error
@@ -60,28 +107,43 @@ function getImageBase64(filePath: string): string {
 // =====================================================
 
 function getFontBase64(): string {
-  try {
-    const fontPath = path.join(
-      process.cwd(),
-      "public/fonts/Cairo-Regular.ttf"
-    );
 
-    if (!fs.existsSync(fontPath)) {
+  try {
+
+    const fontPath =
+      path.join(
+        process.cwd(),
+        "public/fonts/Cairo-Regular.ttf"
+      );
+
+
+    if (
+      !fs.existsSync(
+        fontPath
+      )
+    ) {
+
       console.warn(
-        `PDF Font not found: ${fontPath}`
+        "PDF Font not found:",
+        fontPath
       );
 
       return "";
     }
 
-    const font = fs.readFileSync(
-      fontPath
-    );
+
+    const font =
+      fs.readFileSync(
+        fontPath
+      );
+
 
     return font.toString(
       "base64"
     );
+
   } catch (error) {
+
     console.error(
       "PDF Font Error:",
       error
@@ -101,22 +163,41 @@ function generateInvoiceHtml(
 ): string {
 
   // ===================================================
-  // Parse Items
+  // Parse Invoice Items
   // ===================================================
 
   let items: any = {};
 
+
   try {
+
     items =
       typeof invoice.items === "string"
         ? JSON.parse(invoice.items)
         : invoice.items;
+
   } catch {
+
     items = {
       shopName: "بيض",
       trayCount: 0,
       pricePerTray: 0,
     };
+
+  }
+
+
+  if (
+    !items ||
+    typeof items !== "object"
+  ) {
+
+    items = {
+      shopName: "بيض",
+      trayCount: 0,
+      pricePerTray: 0,
+    };
+
   }
 
 
@@ -124,28 +205,45 @@ function generateInvoiceHtml(
   // Calculate Total
   // ===================================================
 
+  const trayCount =
+    Number(
+      items.trayCount || 0
+    );
+
+
+  const pricePerTray =
+    Number(
+      items.pricePerTray || 0
+    );
+
+
   const total =
-    Number(items?.trayCount || 0) *
-    Number(items?.pricePerTray || 0);
+    trayCount *
+    pricePerTray;
 
 
   // ===================================================
   // Assets
   // ===================================================
 
-  const logo = getImageBase64(
-    "public/assets/farm Logo.png"
-  );
+  const logo =
+    getImageBase64(
+      "public/assets/farm Logo.png"
+    );
 
-  const signature = getImageBase64(
-    "public/assets/signature.png"
-  );
 
-  const font = getFontBase64();
+  const signature =
+    getImageBase64(
+      "public/assets/signature.png"
+    );
+
+
+  const font =
+    getFontBase64();
 
 
   // ===================================================
-  // Date
+  // Invoice Date
   // ===================================================
 
   const date =
@@ -162,11 +260,10 @@ function generateInvoiceHtml(
 
 
   // ===================================================
-  // HTML
+  // Generate HTML
   // ===================================================
 
   return `
-
 <!DOCTYPE html>
 
 <html
@@ -182,10 +279,16 @@ function generateInvoiceHtml(
 
 @font-face {
 
-  font-family: Cairo;
+  font-family: "Cairo";
 
   src:
-    url(data:font/ttf;base64,${font});
+    url(
+      data:font/ttf;base64,${font}
+    );
+
+  font-weight: normal;
+
+  font-style: normal;
 
 }
 
@@ -206,7 +309,10 @@ body {
 
 body {
 
-  font-family: Cairo, Arial, sans-serif;
+  font-family:
+    "Cairo",
+    Arial,
+    sans-serif;
 
   direction: rtl;
 
@@ -214,147 +320,188 @@ body {
 
   color: #333;
 
+  background: white;
+
 }
 
 .header {
 
   display: flex;
 
-  justify-content: space-between;
+  justify-content:
+    space-between;
 
-  align-items: center;
+  align-items:
+    center;
 
   border-bottom:
     2px solid #1B5E20;
 
-  padding-bottom: 20px;
+  padding-bottom:
+    20px;
 
 }
 
 .logo {
 
-  width: 100px;
+  width:
+    100px;
 
-  height: 100px;
+  height:
+    100px;
 
-  object-fit: contain;
+  object-fit:
+    contain;
 
 }
 
 .title {
 
-  text-align: right;
+  text-align:
+    right;
 
 }
 
 .title h1 {
 
-  color: #1B5E20;
+  margin:
+    0;
 
-  font-size: 28px;
+  color:
+    #1B5E20;
 
-  margin: 0;
+  font-size:
+    28px;
 
 }
 
 .info {
 
-  display: flex;
+  display:
+    flex;
 
-  justify-content: space-between;
+  justify-content:
+    space-between;
 
-  margin-top: 20px;
+  margin-top:
+    20px;
 
 }
 
 .section {
 
-  margin-top: 25px;
+  margin-top:
+    25px;
 
-  font-size: 20px;
+  font-size:
+    20px;
 
-  font-weight: bold;
+  font-weight:
+    bold;
 
-  color: #1B5E20;
+  color:
+    #1B5E20;
 
 }
 
 .customer {
 
-  background: #f5f5f5;
+  background:
+    #f5f5f5;
 
-  padding: 15px;
+  padding:
+    15px;
 
-  margin-top: 10px;
+  margin-top:
+    10px;
 
 }
 
 .customer div {
 
-  margin-bottom: 5px;
+  margin-bottom:
+    5px;
 
 }
 
 table {
 
-  width: 100%;
+  width:
+    100%;
 
-  border-collapse: collapse;
+  border-collapse:
+    collapse;
 
-  margin-top: 20px;
+  margin-top:
+    20px;
 
 }
 
 th {
 
-  background: #1B5E20;
+  background:
+    #1B5E20;
 
-  color: white;
+  color:
+    white;
 
-  padding: 10px;
+  padding:
+    10px;
 
 }
 
 td {
 
-  padding: 10px;
+  padding:
+    10px;
 
   border-bottom:
     1px solid #ddd;
 
-  text-align: center;
+  text-align:
+    center;
 
 }
 
 .total {
 
-  margin-top: 30px;
+  margin-top:
+    30px;
 
-  font-size: 22px;
+  font-size:
+    22px;
 
-  font-weight: bold;
+  font-weight:
+    bold;
 
-  color: #1B5E20;
+  color:
+    #1B5E20;
 
-  text-align: left;
+  text-align:
+    left;
 
 }
 
 .signature {
 
-  margin-top: 70px;
+  margin-top:
+    70px;
 
-  text-align: center;
+  text-align:
+    center;
 
 }
 
 .signature img {
 
-  max-width: 100%;
+  max-width:
+    100%;
 
-  max-height: 180px;
+  max-height:
+    180px;
 
-  object-fit: contain;
+  object-fit:
+    contain;
 
 }
 
@@ -362,171 +509,173 @@ td {
 
 </head>
 
+
 <body>
 
 
 <div class="header">
 
 
-<div>
+  <div>
 
-${
-  logo
-    ? `<img
-        class="logo"
-        src="${logo}"
-      >`
-    : ""
-}
+    ${
+      logo
+        ? `
+          <img
+            class="logo"
+            src="${logo}"
+          >
+        `
+        : ""
+    }
+
+  </div>
+
+
+  <div class="title">
+
+    <h1>
+      فاتورة مبيعات
+    </h1>
+
+  </div>
 
 
 </div>
-
-
-<div class="title">
-
-<h1>
-فاتورة مبيعات
-</h1>
-
-</div>
-
-
-</div>
-
 
 
 <div class="info">
 
-<div>
 
-التاريخ:
-${date}
+  <div>
+
+    التاريخ:
+    ${date}
+
+  </div>
+
+
+  <div>
+
+    رقم الفاتورة:
+    ${invoice.number}
+
+  </div>
+
 
 </div>
-
-
-<div>
-
-رقم الفاتورة:
-${invoice.number}
-
-</div>
-
-</div>
-
 
 
 <div class="section">
 
-بيانات العميل
+  بيانات العميل
 
 </div>
 
 
 <div class="customer">
 
-<div>
 
-الاسم:
-${invoice.customer?.name ?? ""}
+  <div>
+
+    الاسم:
+    ${invoice.customer?.name ?? ""}
+
+  </div>
+
+
+  <div>
+
+    الهاتف:
+    ${invoice.customer?.phone ?? ""}
+
+  </div>
+
 
 </div>
-
-
-<div>
-
-الهاتف:
-${invoice.customer?.phone ?? ""}
-
-</div>
-
-</div>
-
 
 
 <div class="section">
 
-تفاصيل الفاتورة
+  تفاصيل الفاتورة
 
 </div>
-
 
 
 <table>
 
-<thead>
+  <thead>
 
-<tr>
+    <tr>
 
-<th>
-اسم الدكان
-</th>
+      <th>
+        اسم الدكان
+      </th>
 
-<th>
-الكمية
-</th>
+      <th>
+        الكمية
+      </th>
 
-<th>
-السعر
-</th>
+      <th>
+        السعر
+      </th>
 
-<th>
-المجموع
-</th>
+      <th>
+        المجموع
+      </th>
 
-</tr>
+    </tr>
 
-</thead>
+  </thead>
 
 
-<tbody>
+  <tbody>
 
-<tr>
+    <tr>
 
-<td>
-${items?.shopName ?? "بيض"}
-</td>
+      <td>
+        ${items.shopName ?? "بيض"}
+      </td>
 
-<td>
-${items?.trayCount ?? 0}
-</td>
+      <td>
+        ${items.trayCount ?? 0}
+      </td>
 
-<td>
-${items?.pricePerTray ?? 0}
-</td>
+      <td>
+        ${items.pricePerTray ?? 0}
+      </td>
 
-<td>
-${total}
-</td>
+      <td>
+        ${total}
+      </td>
 
-</tr>
+    </tr>
 
-</tbody>
+  </tbody>
 
 </table>
 
 
-
 <div class="total">
 
-المجموع الكلي:
-${invoice.total}
-ل.س
+  المجموع الكلي:
+  ${invoice.total ?? total}
+  ل.س
 
 </div>
 
 
-
 <div class="signature">
 
-${
-  signature
-    ? `<img
-        src="${signature}"
-      >`
-    : ""
-}
+  ${
+    signature
+      ? `
+        <img
+          src="${signature}"
+        >
+      `
+      : ""
+  }
 
 </div>
 
@@ -534,7 +683,6 @@ ${
 </body>
 
 </html>
-
 `;
 }
 
@@ -547,7 +695,13 @@ export async function generateInvoicePdf(
   input: InvoicePdfInput
 ): Promise<Buffer> {
 
-  let browser: any = null;
+  let browser:
+    Awaited<
+      ReturnType<
+        typeof import("puppeteer")["launch"]
+      >
+    > | null = null;
+
 
   try {
 
@@ -572,15 +726,18 @@ export async function generateInvoicePdf(
 
 
     // =================================================
-    // Lazy Load Puppeteer
+    // Load Puppeteer
     // =================================================
 
     console.log(
       "PDF: loading Puppeteer"
     );
 
+
     const puppeteer =
-      await import("puppeteer");
+      await import(
+        "puppeteer"
+      );
 
 
     console.log(
@@ -589,25 +746,18 @@ export async function generateInvoicePdf(
 
 
     // =================================================
-    // Launch Browser
+    // Launch Chromium
     // =================================================
 
     console.log(
-      "PDF: launching browser"
+      "PDF: launching Chromium"
     );
+
 
     browser =
       await puppeteer.default.launch({
 
         headless: true,
-
-        handleSIGHUP: false,
-
-        handleSIGINT: false,
-
-        handleSIGTERM: false,
-
-        pipe: false,
 
         args: [
 
@@ -619,9 +769,11 @@ export async function generateInvoicePdf(
 
           "--disable-gpu",
 
-          "--no-zygote",
+          "--disable-software-rasterizer",
 
-          "--single-process",
+          "--no-first-run",
+
+          "--no-default-browser-check",
 
         ],
 
@@ -629,12 +781,12 @@ export async function generateInvoicePdf(
 
 
     console.log(
-      "PDF: browser launched"
+      "PDF: Chromium launched"
     );
 
 
     // =================================================
-    // New Page
+    // Create Page
     // =================================================
 
     const page =
@@ -647,13 +799,14 @@ export async function generateInvoicePdf(
 
 
     // =================================================
-    // Set Content
+    // Set HTML
     // =================================================
 
     await page.setContent(
       html,
       {
-        waitUntil: "load",
+        waitUntil:
+          "load",
       }
     );
 
@@ -670,11 +823,14 @@ export async function generateInvoicePdf(
     const pdf =
       await page.pdf({
 
-        format: "A4",
+        format:
+          "A4",
 
-        printBackground: true,
+        printBackground:
+          true,
 
-        preferCSSPageSize: false,
+        preferCSSPageSize:
+          false,
 
       });
 
@@ -684,9 +840,23 @@ export async function generateInvoicePdf(
     );
 
 
+    // =================================================
+    // IMPORTANT
+    // Always return Buffer
+    // =================================================
+
     return Buffer.from(
       pdf
     );
+
+  } catch (error) {
+
+    console.error(
+      "PDF Generation Error:",
+      error
+    );
+
+    throw error;
 
   } finally {
 
@@ -701,13 +871,13 @@ export async function generateInvoicePdf(
         await browser.close();
 
         console.log(
-          "PDF: browser closed"
+          "PDF: Chromium closed"
         );
 
       } catch (error) {
 
         console.error(
-          "PDF: browser close error:",
+          "PDF: Chromium close error:",
           error
         );
 

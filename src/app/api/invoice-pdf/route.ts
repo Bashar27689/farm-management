@@ -15,9 +15,7 @@ import {
   generateInvoicePdf,
 } from "../../../lib/generateInvoicePdf";
 
-
 export const runtime = "nodejs";
-
 
 // =====================================================
 // POST
@@ -26,40 +24,27 @@ export const runtime = "nodejs";
 export async function POST(
   request: NextRequest
 ) {
-
-  console.log(
-    "PDF Route: started"
-  );
-
+  console.log("PDF Route: started");
 
   try {
-
     // =================================================
     // Authentication
     // =================================================
 
     const user =
-      getCurrentUser(
-        request
-      );
-
+      getCurrentUser(request);
 
     if (!user) {
-
       return NextResponse.json(
         {
           success: false,
-
-          message:
-            "غير مصرح",
+          message: "غير مصرح",
         },
         {
           status: 401,
         }
       );
-
     }
-
 
     // =================================================
     // Request Body
@@ -69,29 +54,22 @@ export async function POST(
       invoiceId,
     } = await request.json();
 
-
     if (!invoiceId) {
-
       return NextResponse.json(
         {
           success: false,
-
-          message:
-            "معرف الفاتورة مطلوب",
+          message: "معرف الفاتورة مطلوب",
         },
         {
           status: 400,
         }
       );
-
     }
-
 
     console.log(
       "PDF Route: invoiceId",
       invoiceId
     );
-
 
     // =================================================
     // Get Invoice
@@ -99,43 +77,31 @@ export async function POST(
 
     const invoice =
       await prisma.invoice.findUnique({
-
         where: {
           id: invoiceId,
         },
 
         include: {
-
           customer: true,
-
           sales: true,
-
         },
-
       });
 
-
     if (!invoice) {
-
       return NextResponse.json(
         {
           success: false,
-
-          message:
-            "الفاتورة غير موجودة",
+          message: "الفاتورة غير موجودة",
         },
         {
           status: 404,
         }
       );
-
     }
-
 
     console.log(
       "PDF Route: invoice loaded"
     );
-
 
     // =================================================
     // Generate PDF
@@ -146,44 +112,54 @@ export async function POST(
         invoice,
       });
 
-
     console.log(
-      "PDF Route: PDF ready"
+      "PDF Route: PDF ready",
+      pdf.length
     );
 
+    // =================================================
+    // Buffer → Uint8Array
+    //
+    // مهم:
+    // NextResponse لا نقوم بتمرير Buffer مباشرة.
+    // =================================================
+
+    const body =
+      new Uint8Array(pdf);
 
     // =================================================
     // Response
     // =================================================
 
-   return new NextResponse(
-  new Uint8Array(pdf),
-  {
-    status: 200,
+    return new NextResponse(
+      body,
+      {
+        status: 200,
 
-    headers: {
-      "Content-Type": "application/pdf",
+        headers: {
+          "Content-Type":
+            "application/pdf",
 
-      "Content-Disposition":
-        `attachment; filename="invoice-${invoice.number}.pdf"`,
+          "Content-Disposition":
+            `attachment; filename="invoice-${invoice.number}.pdf"`,
 
-      "Content-Length":
-        String(pdf.length),
-    },
-  }
-);
+          "Content-Length":
+            String(body.byteLength),
+
+          "Cache-Control":
+            "no-store",
+        },
+      }
+    );
 
   } catch (error) {
-
     console.error(
       "PDF Route Error:",
       error
     );
 
-
     return NextResponse.json(
       {
-
         success: false,
 
         message:
@@ -193,13 +169,10 @@ export async function POST(
           error instanceof Error
             ? error.message
             : "Unknown error",
-
       },
       {
         status: 500,
       }
     );
-
   }
-
 }

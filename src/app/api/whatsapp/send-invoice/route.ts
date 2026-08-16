@@ -17,9 +17,7 @@ import {
   generateInvoicePdf,
 } from "../../../../lib/generateInvoicePdf";
 
-
 export const runtime = "nodejs";
-
 
 // =====================================================
 // WhatsApp Configuration
@@ -34,7 +32,6 @@ const WHATSAPP_PHONE_NUMBER_ID =
 const WHATSAPP_API_VERSION =
   "v26.0";
 
-
 // =====================================================
 // Normalize Phone
 // =====================================================
@@ -42,12 +39,8 @@ const WHATSAPP_API_VERSION =
 function normalizePhone(
   phone: string
 ): string {
-
   let normalized =
     phone.trim();
-
-
-  // Remove spaces
 
   normalized =
     normalized.replace(
@@ -55,45 +48,28 @@ function normalizePhone(
       ""
     );
 
-
-  // Remove brackets and dashes
-
   normalized =
     normalized.replace(
       /[()-]/g,
       ""
     );
 
-
-  // Remove +
-
   if (
     normalized.startsWith("+")
   ) {
-
     normalized =
       normalized.substring(1);
-
   }
-
-
-  // Convert 00XXXXXXXX
-  // to XXXXXXXXXX
 
   if (
     normalized.startsWith("00")
   ) {
-
     normalized =
       normalized.substring(2);
-
   }
 
-
   return normalized;
-
 }
-
 
 // =====================================================
 // Buffer → ArrayBuffer
@@ -102,74 +78,56 @@ function normalizePhone(
 function bufferToArrayBuffer(
   buffer: Buffer
 ): ArrayBuffer {
-
   const arrayBuffer =
     new ArrayBuffer(
       buffer.byteLength
     );
-
 
   const view =
     new Uint8Array(
       arrayBuffer
     );
 
-
-  view.set(
-    buffer
-  );
-
+  view.set(buffer);
 
   return arrayBuffer;
-
 }
 
-
 // =====================================================
-// Upload PDF
+// Upload PDF to WhatsApp
 // =====================================================
 
 async function uploadWhatsAppDocument(
   pdf: Buffer,
   filename: string
 ): Promise<string> {
-
-  if (
-    !WHATSAPP_ACCESS_TOKEN
-  ) {
-
+  if (!WHATSAPP_ACCESS_TOKEN) {
     throw new Error(
       "WHATSAPP_ACCESS_TOKEN is not configured"
     );
-
   }
 
-
-  if (
-    !WHATSAPP_PHONE_NUMBER_ID
-  ) {
-
+  if (!WHATSAPP_PHONE_NUMBER_ID) {
     throw new Error(
       "WHATSAPP_PHONE_NUMBER_ID is not configured"
     );
-
   }
-
 
   console.log(
     "WhatsApp: preparing media upload"
   );
 
-
   const formData =
     new FormData();
 
+  // =================================================
+  // Buffer → ArrayBuffer → Blob
+  //
+  // لا نمرر Buffer مباشرة إلى Blob.
+  // =================================================
 
   const arrayBuffer =
-    bufferToArrayBuffer(
-      pdf
-    );
-
+    bufferToArrayBuffer(pdf);
 
   const blob =
     new Blob(
@@ -182,96 +140,70 @@ async function uploadWhatsAppDocument(
       }
     );
 
-
   formData.append(
     "file",
     blob,
     filename
   );
 
-
   formData.append(
     "messaging_product",
     "whatsapp"
   );
-
 
   formData.append(
     "type",
     "application/pdf"
   );
 
-
   console.log(
     "WhatsApp: uploading media"
   );
-
 
   const response =
     await fetch(
       `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${WHATSAPP_PHONE_NUMBER_ID}/media`,
       {
-
-        method:
-          "POST",
+        method: "POST",
 
         headers: {
-
           Authorization:
             `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-
         },
 
         body:
           formData,
-
       }
     );
-
 
   const data =
     await response.json();
 
-
-  if (
-    !response.ok
-  ) {
-
+  if (!response.ok) {
     console.error(
       "WhatsApp media upload error:",
       data
     );
 
-
     throw new Error(
       data?.error?.message ||
       "Failed to upload PDF to WhatsApp"
     );
-
   }
 
-
-  if (
-    !data?.id
-  ) {
-
+  if (!data?.id) {
     throw new Error(
       "WhatsApp did not return media ID"
     );
-
   }
-
 
   console.log(
     "WhatsApp: media uploaded",
     data.id
   );
 
-
   return data.id;
-
 }
-
 
 // =====================================================
 // Send WhatsApp Document
@@ -283,56 +215,39 @@ async function sendWhatsAppDocument(
   filename: string,
   caption: string
 ) {
-
-  if (
-    !WHATSAPP_ACCESS_TOKEN
-  ) {
-
+  if (!WHATSAPP_ACCESS_TOKEN) {
     throw new Error(
       "WHATSAPP_ACCESS_TOKEN is not configured"
     );
-
   }
 
-
-  if (
-    !WHATSAPP_PHONE_NUMBER_ID
-  ) {
-
+  if (!WHATSAPP_PHONE_NUMBER_ID) {
     throw new Error(
       "WHATSAPP_PHONE_NUMBER_ID is not configured"
     );
-
   }
-
 
   console.log(
     "WhatsApp: sending document to",
     to
   );
 
-
   const response =
     await fetch(
       `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {
-
-        method:
-          "POST",
+        method: "POST",
 
         headers: {
-
           Authorization:
             `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
 
           "Content-Type":
             "application/json",
-
         },
 
         body:
           JSON.stringify({
-
             messaging_product:
               "whatsapp",
 
@@ -345,53 +260,38 @@ async function sendWhatsAppDocument(
               "document",
 
             document: {
-
               id:
                 mediaId,
 
               filename,
 
               caption,
-
             },
-
           }),
-
       }
     );
-
 
   const data =
     await response.json();
 
-
-  if (
-    !response.ok
-  ) {
-
+  if (!response.ok) {
     console.error(
       "WhatsApp document send error:",
       data
     );
 
-
     throw new Error(
       data?.error?.message ||
       "Failed to send WhatsApp document"
     );
-
   }
-
 
   console.log(
     "WhatsApp: document sent"
   );
 
-
   return data;
-
 }
-
 
 // =====================================================
 // POST
@@ -400,42 +300,29 @@ async function sendWhatsAppDocument(
 export async function POST(
   request: NextRequest
 ) {
-
   console.log(
     "WhatsApp Invoice: route started"
   );
 
-
   try {
-
     // =================================================
     // Authentication
     // =================================================
 
     const user =
-      getCurrentUser(
-        request
-      );
-
+      getCurrentUser(request);
 
     if (!user) {
-
       return NextResponse.json(
         {
-
           success: false,
-
-          message:
-            "غير مصرح",
-
+          message: "غير مصرح",
         },
         {
           status: 401,
         }
       );
-
     }
-
 
     // =================================================
     // Request Body
@@ -445,71 +332,48 @@ export async function POST(
       invoiceId,
     } = await request.json();
 
-
     if (!invoiceId) {
-
       return NextResponse.json(
         {
-
           success: false,
-
           message:
             "معرف الفاتورة مطلوب",
-
         },
         {
           status: 400,
         }
       );
-
     }
-
 
     // =================================================
     // WhatsApp Configuration
     // =================================================
 
-    if (
-      !WHATSAPP_ACCESS_TOKEN
-    ) {
-
+    if (!WHATSAPP_ACCESS_TOKEN) {
       return NextResponse.json(
         {
-
           success: false,
-
           message:
             "WHATSAPP_ACCESS_TOKEN غير موجود في Environment Variables",
-
         },
         {
           status: 500,
         }
       );
-
     }
 
-
-    if (
-      !WHATSAPP_PHONE_NUMBER_ID
-    ) {
-
+    if (!WHATSAPP_PHONE_NUMBER_ID) {
       return NextResponse.json(
         {
-
           success: false,
-
           message:
             "WHATSAPP_PHONE_NUMBER_ID غير موجود في Environment Variables",
-
         },
         {
           status: 500,
         }
       );
-
     }
-
 
     // =================================================
     // Get Invoice
@@ -519,94 +383,60 @@ export async function POST(
       "WhatsApp Invoice: loading invoice"
     );
 
-
     const invoice =
       await prisma.invoice.findUnique({
-
         where: {
-
-          id:
-            invoiceId,
-
+          id: invoiceId,
         },
 
         include: {
-
-          customer:
-            true,
-
-          sales:
-            true,
-
+          customer: true,
+          sales: true,
         },
-
       });
 
-
     if (!invoice) {
-
       return NextResponse.json(
         {
-
           success: false,
-
           message:
             "الفاتورة غير موجودة",
-
         },
         {
           status: 404,
         }
       );
-
     }
-
 
     // =================================================
     // Customer
     // =================================================
 
-    if (
-      !invoice.customer
-    ) {
-
+    if (!invoice.customer) {
       return NextResponse.json(
         {
-
           success: false,
-
           message:
             "لا يوجد عميل مرتبط بالفاتورة",
-
         },
         {
           status: 400,
         }
       );
-
     }
 
-
-    if (
-      !invoice.customer.phone
-    ) {
-
+    if (!invoice.customer.phone) {
       return NextResponse.json(
         {
-
           success: false,
-
           message:
             "رقم هاتف العميل غير موجود",
-
         },
         {
           status: 400,
         }
       );
-
     }
-
 
     // =================================================
     // Normalize Phone
@@ -617,33 +447,23 @@ export async function POST(
         invoice.customer.phone
       );
 
-
-    if (
-      !whatsappPhone
-    ) {
-
+    if (!whatsappPhone) {
       return NextResponse.json(
         {
-
           success: false,
-
           message:
             "رقم هاتف العميل غير صالح",
-
         },
         {
           status: 400,
         }
       );
-
     }
-
 
     console.log(
       "WhatsApp recipient:",
       whatsappPhone
     );
-
 
     // =================================================
     // Generate PDF
@@ -653,18 +473,15 @@ export async function POST(
       "WhatsApp Invoice: generating PDF"
     );
 
-
     const pdf =
       await generateInvoicePdf({
         invoice,
       });
 
-
     console.log(
       "WhatsApp Invoice: PDF generated",
       pdf.length
     );
-
 
     // =================================================
     // Filename
@@ -672,7 +489,6 @@ export async function POST(
 
     const filename =
       `invoice-${invoice.number}.pdf`;
-
 
     // =================================================
     // Upload PDF
@@ -684,7 +500,6 @@ export async function POST(
         filename
       );
 
-
     // =================================================
     // Caption
     // =================================================
@@ -694,24 +509,17 @@ export async function POST(
       `العميل: ${invoice.customer.name}\n` +
       `المجموع: ${invoice.total} ل.س`;
 
-
     // =================================================
     // Send
     // =================================================
 
     const whatsappResult =
       await sendWhatsAppDocument(
-
         whatsappPhone,
-
         mediaId,
-
         filename,
-
         caption
-
       );
-
 
     // =================================================
     // Success
@@ -719,7 +527,6 @@ export async function POST(
 
     return NextResponse.json(
       {
-
         success: true,
 
         message:
@@ -736,7 +543,6 @@ export async function POST(
 
         whatsapp:
           whatsappResult,
-
       },
       {
         status: 200,
@@ -744,16 +550,13 @@ export async function POST(
     );
 
   } catch (error) {
-
     console.error(
       "WhatsApp Invoice Error:",
       error
     );
 
-
     return NextResponse.json(
       {
-
         success: false,
 
         message:
@@ -763,13 +566,10 @@ export async function POST(
           error instanceof Error
             ? error.message
             : "Unknown error",
-
       },
       {
         status: 500,
       }
     );
-
   }
-
 }
