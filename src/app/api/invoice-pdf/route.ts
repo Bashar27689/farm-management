@@ -156,27 +156,22 @@ export async function POST(
     // Response
     // =================================================
 
-    return new NextResponse(
-      pdf,
-      {
+   return new NextResponse(
+  new Uint8Array(pdf),
+  {
+    status: 200,
 
-        status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
 
-        headers: {
+      "Content-Disposition":
+        `attachment; filename="invoice-${invoice.number}.pdf"`,
 
-          "Content-Type":
-            "application/pdf",
-
-          "Content-Disposition":
-            `attachment; filename="invoice-${invoice.number}.pdf"`,
-
-          "Content-Length":
-            String(pdf.length),
-
-        },
-
-      }
-    );
+      "Content-Length":
+        String(pdf.length),
+    },
+  }
+);
 
   } catch (error) {
 
