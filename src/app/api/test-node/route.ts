@@ -3,15 +3,31 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 export async function GET() {
-  console.log("STEP 1");
+  console.log("TEST NODE: route started");
 
-  const stdin = process.stdin;
+  console.log(
+    "TEST NODE: version",
+    process.version
+  );
 
-  console.log("STEP 2");
+  console.log(
+    "TEST NODE: stdin",
+    process.stdin
+      ? "exists"
+      : "missing"
+  );
+
+  console.log(
+    "TEST NODE: stdout",
+    process.stdout
+      ? "exists"
+      : "missing"
+  );
 
   return NextResponse.json({
     success: true,
     node: process.version,
-    stdinExists: !!stdin,
+    stdin: !!process.stdin,
+    stdout: !!process.stdout,
   });
 }
