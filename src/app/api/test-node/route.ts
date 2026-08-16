@@ -1,3 +1,5 @@
+// src/app/api/test-node/route.ts
+
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -11,23 +13,13 @@ export async function GET() {
   );
 
   console.log(
-    "TEST NODE: stdin",
-    process.stdin
-      ? "exists"
-      : "missing"
-  );
-
-  console.log(
-    "TEST NODE: stdout",
-    process.stdout
-      ? "exists"
-      : "missing"
+    "TEST NODE: platform",
+    process.platform
   );
 
   return NextResponse.json({
     success: true,
     node: process.version,
-    stdin: !!process.stdin,
-    stdout: !!process.stdout,
+    platform: process.platform,
   });
 }
