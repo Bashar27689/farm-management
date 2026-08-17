@@ -1,102 +1,139 @@
-// src/app/api/test-puppeteer/route.ts
-
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  console.log("PUPPETEER TEST 1: route started");
+  let browser = null;
 
   try {
-    console.log("PUPPETEER TEST 2: importing puppeteer");
+    console.log("=== PUPPETEER TEST START ===");
 
     const puppeteer = await import("puppeteer");
 
-    console.log("PUPPETEER TEST 3: puppeteer imported");
+    console.log("Puppeteer loaded");
+
+    const executablePath =
+      puppeteer.default.executablePath();
 
     console.log(
-      "PUPPETEER TEST 4: executable path",
-      puppeteer.default.executablePath()
+      "Puppeteer executable path:",
+      executablePath
     );
 
-    console.log("PUPPETEER TEST 5: launching browser");
+    browser =
+      await puppeteer.default.launch({
+        headless: true,
 
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-      ],
-    });
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-software-rasterizer",
+          "--no-first-run",
+          "--no-default-browser-check",
+        ],
+      });
 
-    console.log("PUPPETEER TEST 6: browser launched");
+    console.log(
+      "Chromium launched successfully"
+    );
 
-    const page = await browser.newPage();
-
-    console.log("PUPPETEER TEST 7: page created");
+    const page =
+      await browser.newPage();
 
     await page.setContent(`
       <!DOCTYPE html>
-      <html>
+      <html lang="ar" dir="rtl">
         <head>
           <meta charset="UTF-8">
+          <title>Puppeteer Test</title>
         </head>
+
         <body>
-          <h1>PDF Test</h1>
-          <p>Hello from Hostinger</p>
+          <h1>اختبار Puppeteer</h1>
+          <p>Chrome يعمل بنجاح على Hostinger.</p>
         </body>
       </html>
     `);
 
-    console.log("PUPPETEER TEST 8: content loaded");
+    console.log("Page loaded");
 
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-    });
+    const pdf =
+      await page.pdf({
+        format: "A4",
+        printBackground: true,
+      });
 
     console.log(
-      "PUPPETEER TEST 9: PDF generated",
+      "PDF generated:",
       pdf.length
     );
 
-    await browser.close();
+    return NextResponse.json({
+      success: true,
 
-    console.log("PUPPETEER TEST 10: browser closed");
+      puppeteerVersion:
+        puppeteer.default.version,
 
-    return new NextResponse(
-      new Uint8Array(pdf),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition":
-            'inline; filename="test.pdf"',
-          "Content-Length":
-            String(pdf.length),
-        },
-      }
-    );
+      executablePath,
+
+      pdfSize:
+        pdf.length,
+
+      message:
+        "Puppeteer و Chromium يعملان بنجاح",
+    });
 
   } catch (error) {
 
     console.error(
-      "PUPPETEER TEST ERROR:",
-      error
+      "=== PUPPETEER TEST FAILED ==="
     );
+
+    console.error(error);
 
     return NextResponse.json(
       {
         success: false,
+
         error:
           error instanceof Error
             ? error.message
             : String(error),
+
+        stack:
+          error instanceof Error
+            ? error.stack
+            : undefined,
       },
       {
         status: 500,
       }
     );
+
+  } finally {
+
+    if (browser) {
+
+      try {
+
+        await browser.close();
+
+        console.log(
+          "Browser closed"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Browser close error:",
+          error
+        );
+
+      }
+
+    }
+
   }
 }
