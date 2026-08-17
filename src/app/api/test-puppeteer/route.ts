@@ -1,37 +1,100 @@
 import { NextResponse } from "next/server";
+import puppeteer from "puppeteer";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  try {
-    console.log("=== NODE STDIN TEST ===");
+  let browser = null;
 
-    const result = {
-      stdinExists: !!process.stdin,
-      stdinReadable: process.stdin.readable,
-      stdinDestroyed: process.stdin.destroyed,
-      stdinFd:
-        typeof process.stdin.fd === "number"
-          ? process.stdin.fd
-          : null,
-    };
+  try {
+    console.log("=== PUPPETEER TEST START ===");
+
+    const executablePath = puppeteer.executablePath();
 
     console.log(
-      "STDIN:",
-      result
+      "Executable path:",
+      executablePath
     );
 
-    return NextResponse.json({
-      success: true,
-      ...result,
+    browser = await puppeteer.launch({
+      headless: true,
+
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
     });
+
+    console.log(
+      "Browser launched successfully"
+    );
+
+    const page = await browser.newPage();
+
+    console.log(
+      "Page created successfully"
+    );
+
+    await page.setContent(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              direction: rtl;
+              padding: 40px;
+            }
+          </style>
+        </head>
+
+        <body>
+          <h1>اختبار Puppeteer</h1>
+          <p>مرحبا من Hostinger</p>
+        </body>
+      </html>
+    `);
+
+    console.log(
+      "HTML loaded successfully"
+    );
+
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+    });
+
+    console.log(
+      "PDF generated successfully:",
+      pdf.length,
+      "bytes"
+    );
+
+    return new NextResponse(
+      Buffer.from(pdf),
+      {
+        status: 200,
+
+        headers: {
+          "Content-Type":
+            "application/pdf",
+
+          "Content-Disposition":
+            'inline; filename="test.pdf"',
+        },
+      }
+    );
 
   } catch (error) {
 
     console.error(
-      "STDIN TEST FAILED:",
-      error
+      "=== PUPPETEER TEST ERROR ==="
     );
+
+    console.error(error);
 
     return NextResponse.json(
       {
@@ -41,15 +104,33 @@ export async function GET() {
           error instanceof Error
             ? error.message
             : String(error),
-
-        stack:
-          error instanceof Error
-            ? error.stack
-            : undefined,
       },
       {
         status: 500,
       }
     );
+
+  } finally {
+
+    if (browser) {
+
+      try {
+
+        await browser.close();
+
+        console.log(
+          "Browser closed"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Browser close error:",
+          error
+        );
+
+      }
+
+    }
   }
 }
