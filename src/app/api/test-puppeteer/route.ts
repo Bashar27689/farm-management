@@ -4,49 +4,38 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    console.log("=== NODE STDIN TEST ===");
+    console.log("=== NODE PROCESS TEST ===");
+
+    const result = {
+      nodeVersion: process.version,
+
+      execPath: process.execPath,
+
+      platform: process.platform,
+
+      pid: process.pid,
+
+      stdinProperty:
+        Object.prototype.hasOwnProperty.call(
+          process,
+          "stdin"
+        ),
+    };
 
     console.log(
-      "Node version:",
-      process.version
-    );
-
-    console.log(
-      "execPath:",
-      process.execPath
-    );
-
-    console.log(
-      "stdin fd:",
-      process.stdin.fd
-    );
-
-    console.log(
-      "stdin readable:",
-      process.stdin.readable
+      "Process information:",
+      result
     );
 
     return NextResponse.json({
       success: true,
-
-      nodeVersion:
-        process.version,
-
-      execPath:
-        process.execPath,
-
-      stdin: {
-        fd: process.stdin.fd,
-        readable: process.stdin.readable,
-        isTTY:
-          process.stdin.isTTY ?? false,
-      },
+      result,
     });
 
   } catch (error) {
 
     console.error(
-      "=== NODE STDIN TEST FAILED ==="
+      "=== PROCESS TEST ERROR ==="
     );
 
     console.error(error);
