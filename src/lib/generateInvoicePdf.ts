@@ -4,8 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type {
-  TDocumentDefinitions,
   Content,
+  TDocumentDefinitions,
 } from "pdfmake/interfaces";
 
 import {
@@ -21,7 +21,7 @@ type InvoicePdfInput = {
 };
 
 // =====================================================
-// Asset → Base64
+// Image → Base64
 // =====================================================
 
 function getImageBase64(
@@ -121,24 +121,27 @@ export async function generateInvoicePdf(
         ? JSON.parse(invoice.items)
         : invoice.items;
 
-  } catch (error) {
-    console.warn(
-      "PDF: failed to parse invoice items",
-      error
-    );
-
-    items = {};
+  } catch {
+    items = {
+      shopName: "بيض",
+      trayCount: 0,
+      pricePerTray: 0,
+    };
   }
 
   if (
     !items ||
     typeof items !== "object"
   ) {
-    items = {};
+    items = {
+      shopName: "بيض",
+      trayCount: 0,
+      pricePerTray: 0,
+    };
   }
 
   // ===================================================
-  // Invoice Values
+  // Calculate Total
   // ===================================================
 
   const trayCount =
@@ -151,13 +154,9 @@ export async function generateInvoicePdf(
       items.pricePerTray || 0
     );
 
-  const calculatedTotal =
+  const total =
     trayCount *
     pricePerTray;
-
-  const total =
-    invoice.total ??
-    calculatedTotal;
 
   // ===================================================
   // Assets
@@ -174,20 +173,32 @@ export async function generateInvoicePdf(
     );
 
   // ===================================================
-  // Date
+  // Invoice Date
   // ===================================================
+const invoiceDate =
+  new Date(
+    invoice.date
+  );
 
-  const date =
-    new Date(
-      invoice.date
-    ).toLocaleDateString(
-      "ar-EG",
-      {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }
-    );
+const day =
+  invoiceDate
+    .getDate()
+    .toString();
+
+const month =
+  (
+    invoiceDate.getMonth() + 1
+  )
+    .toString();
+
+const year =
+  invoiceDate
+    .getFullYear()
+    .toString();
+
+const date =
+  `${day}-${month}-${year}`;
+// =====================================================
 
   // ===================================================
   // Colors
@@ -197,10 +208,10 @@ export async function generateInvoicePdf(
     "#1B5E20";
 
   const LIGHT_GRAY =
-    "#F5F5F5";
+    "#f5f5f5";
 
   const BORDER =
-    "#DDDDDD";
+    "#dddddd";
 
   const TEXT =
     "#333333";
@@ -210,169 +221,150 @@ export async function generateInvoicePdf(
   // ===================================================
 
   const header: Content = {
-    table: {
-      widths: [
-        "*",
-        "auto",
-      ],
+    columns: [
 
-      body: [
-        [
-          {
-            stack: [
-              {
-                text:
-                  "فاتورة مبيعات",
+      // -----------------------------------------------
+      // Logo
+      // -----------------------------------------------
 
-                fontSize: 28,
+      logo
+        ? {
+            image:
+              logo,
 
-                bold: true,
+            width:
+              100,
 
-                color: GREEN,
+            height:
+              100,
 
-                alignment:
-                  "right",
-              },
+            fit: [
+              100,
+              100,
             ],
 
-            border: [
-              false,
-              false,
-              false,
-              true,
-            ],
-
-            borderColor: [
-  GREEN,
-  GREEN,
-  GREEN,
-  GREEN,
-],
-
-           
-
-            margin: [
-              0,
-              20,
-              0,
-              20,
-            ],
+            alignment:
+              "left",
+          }
+        : {
+            text: "",
           },
 
-          logo
-            ? {
-                image: logo,
+      // -----------------------------------------------
+      // Title
+      // -----------------------------------------------
 
-                width: 100,
+      {
+        text:
+          " مبيعات "+"فاتورة ",
 
-                height: 100,
+        fontSize:
+          28,
 
-                fit: [
-                  100,
-                  100,
-                ],
+        bold:
+          true,
 
-                alignment:
-                  "left",
+        color:
+          GREEN,
 
-                border: [
-                  false,
-                  false,
-                  false,
-                  true,
-                ],
+        alignment:
+          "right",
 
-                borderColor: [
-  GREEN,
-  GREEN,
-  GREEN,
-  GREEN,
-],
-
-
-                margin: [
-                  0,
-                  0,
-                  0,
-                  20,
-                ],
-              }
-            : {
-                text: "",
-
-                border: [
-                  false,
-                  false,
-                  false,
-                  true,
-                ],
-
-               borderColor: [
-  GREEN,
-  GREEN,
-  GREEN,
-  GREEN,
-],
-             
-
-                margin: [
-                  0,
-                  0,
-                  0,
-                  20,
-                ],
-              },
+        margin: [
+          0,
+          30,
+          0,
+          0,
         ],
-      ],
-    },
+      },
+    ],
 
-    layout: {
-      hLineWidth: () => 0,
+    columnGap:
+      10,
 
-      vLineWidth: () => 0,
-
-      paddingLeft: () => 0,
-
-      paddingRight: () => 0,
-
-      paddingTop: () => 0,
-
-      paddingBottom: () => 0,
-    },
+    margin: [
+      0,
+      0,
+      0,
+      20,
+    ],
   };
 
   // ===================================================
-  // Invoice Information
+  // Header Bottom Border
+  // ===================================================
+
+  const headerLine: Content = {
+    canvas: [
+      {
+        type:
+          "line",
+
+        x1:
+          0,
+
+        y1:
+          0,
+
+        x2:
+          535,
+
+        y2:
+          0,
+
+        lineWidth:
+          2,
+
+        lineColor:
+          GREEN,
+      },
+    ],
+
+    margin: [
+      0,
+      -20,
+      0,
+      0,
+    ],
+  };
+
+  // ===================================================
+  // Invoice Info
   // ===================================================
 
   const invoiceInfo: Content = {
     columns: [
+
+{
+        text: [
+       {
+          text:
+            date,
+        },
+        {
+          text:
+            "التاريخ: ",
+        },
+
+       
+      ],
+
+      alignment:
+        "right",
+    },
+
       {
         text: [
-          {
-            text: "التاريخ: ",
-            bold: true,
-          },
-
-          date,
-        ],
-
-        alignment:
-          "right",
-      },
-
-      {
-        text: [
-          {
-            text:
-              "رقم الفاتورة: ",
-            bold: true,
-          },
 
           String(
-            invoice.number ??
-            ""
+            invoice.number ?? ""
           ),
+
+          {
+            text:
+              "الفاتورة: "+"رقم",
+          },
+
         ],
 
         alignment:
@@ -389,57 +381,67 @@ export async function generateInvoicePdf(
   };
 
   // ===================================================
-  // Customer Section Title
+  // Section Title Helper
   // ===================================================
 
-  const customerTitle: Content = {
-    text:
-      "بيانات العميل",
+  function sectionTitle(
+    text: string
+  ): Content {
 
-    fontSize: 20,
+    return {
+      text,
 
-    bold: true,
+      fontSize:
+        20,
 
-    color: GREEN,
+      bold:
+        true,
 
-    alignment:
-      "right",
+      color:
+        GREEN,
 
-    margin: [
-      0,
-      25,
-      0,
-      10,
-    ],
-  };
+      alignment:
+        "right",
+
+      margin: [
+        0,
+        25,
+        0,
+        10,
+      ],
+    };
+  }
 
   // ===================================================
-  // Customer Information
+  // Customer
   // ===================================================
 
-  const customerInfo: Content = {
+  const customer: Content = {
     table: {
+
       widths: [
         "*",
       ],
 
       body: [
+
         [
           {
             stack: [
+
               {
                 text: [
-                  {
-                    text:
-                      "الاسم: ",
-                    bold: true,
-                  },
 
                   String(
                     invoice.customer
-                      ?.name ??
-                    ""
+                      ?.name ?? ""
                   ),
+
+                  {
+                    text:
+                      "الاسم: ",
+                  },
+
                 ],
 
                 alignment:
@@ -455,17 +457,17 @@ export async function generateInvoicePdf(
 
               {
                 text: [
-                  {
-                    text:
-                      "الهاتف: ",
-                    bold: true,
-                  },
 
                   String(
                     invoice.customer
-                      ?.phone ??
-                    ""
+                      ?.phone ?? ""
                   ),
+
+                  {
+                    text:
+                      "الهاتف: ",
+                  },
+
                 ],
 
                 alignment:
@@ -488,42 +490,31 @@ export async function generateInvoicePdf(
     },
 
     layout: {
-      hLineWidth: () => 0,
 
-      vLineWidth: () => 0,
+      hLineWidth:
+        () => 0,
 
-      paddingLeft: () => 0,
+      vLineWidth:
+        () => 0,
 
-      paddingRight: () => 0,
+      paddingLeft:
+        () => 0,
 
-      paddingTop: () => 0,
+      paddingRight:
+        () => 0,
 
-      paddingBottom: () => 0,
+      paddingTop:
+        () => 0,
+
+      paddingBottom:
+        () => 0,
     },
-  };
-
-  // ===================================================
-  // Details Title
-  // ===================================================
-
-  const detailsTitle: Content = {
-    text:
-      "تفاصيل الفاتورة",
-
-    fontSize: 20,
-
-    bold: true,
-
-    color: GREEN,
-
-    alignment:
-      "right",
 
     margin: [
       0,
-      25,
       0,
-      10,
+      0,
+      0,
     ],
   };
 
@@ -533,22 +524,31 @@ export async function generateInvoicePdf(
 
   const invoiceTable: Content = {
     table: {
-      headerRows: 1,
+
+      headerRows:
+        1,
 
       widths: [
         "*",
-        "auto",
-        "auto",
-        "auto",
+        "*",
+        "*",
+        "*",
       ],
 
       body: [
+
+        // =============================================
+        // Header
+        // =============================================
+
         [
+
           {
             text:
-              "اسم الدكان",
+              "المجموع",
 
-            bold: true,
+            bold:
+              true,
 
             color:
               "#FFFFFF",
@@ -561,32 +561,9 @@ export async function generateInvoicePdf(
 
             margin: [
               5,
-              8,
+              10,
               5,
-              8,
-            ],
-          },
-
-          {
-            text:
-              "الكمية",
-
-            bold: true,
-
-            color:
-              "#FFFFFF",
-
-            fillColor:
-              GREEN,
-
-            alignment:
-              "center",
-
-            margin: [
-              5,
-              8,
-              5,
-              8,
+              10,
             ],
           },
 
@@ -594,7 +571,8 @@ export async function generateInvoicePdf(
             text:
               "السعر",
 
-            bold: true,
+            bold:
+              true,
 
             color:
               "#FFFFFF",
@@ -607,17 +585,18 @@ export async function generateInvoicePdf(
 
             margin: [
               5,
-              8,
+              10,
               5,
-              8,
+              10,
             ],
           },
 
           {
             text:
-              "المجموع",
+              "الكمية",
 
-            bold: true,
+            bold:
+              true,
 
             color:
               "#FFFFFF",
@@ -630,37 +609,47 @@ export async function generateInvoicePdf(
 
             margin: [
               5,
-              8,
+              10,
               5,
-              8,
+              10,
+            ],
+          },
+
+          {
+            text:
+              " الدكان "+" اسم",
+
+            bold:
+              true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              10,
+              5,
+              10,
             ],
           },
         ],
 
+        // =============================================
+        // Data
+        // =============================================
+
         [
-          {
-            text:
-              String(
-                items.shopName ??
-                "بيض"
-              ),
-
-            alignment:
-              "right",
-
-            margin: [
-              5,
-              8,
-              5,
-              8,
-            ],
-          },
 
           {
             text:
               String(
-                items.trayCount ??
-                0
+                total
               ),
 
             alignment:
@@ -668,9 +657,9 @@ export async function generateInvoicePdf(
 
             margin: [
               5,
-              8,
+              10,
               5,
-              8,
+              10,
             ],
           },
 
@@ -686,16 +675,17 @@ export async function generateInvoicePdf(
 
             margin: [
               5,
-              8,
+              10,
               5,
-              8,
+              10,
             ],
           },
 
           {
             text:
               String(
-                calculatedTotal
+                items.trayCount ??
+                0
               ),
 
             alignment:
@@ -703,9 +693,27 @@ export async function generateInvoicePdf(
 
             margin: [
               5,
-              8,
+              10,
               5,
-              8,
+              10,
+            ],
+          },
+
+          {
+            text:
+              String(
+                items.shopName ??
+                "بيض"
+              ),
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              10,
+              5,
+              10,
             ],
           },
         ],
@@ -713,34 +721,54 @@ export async function generateInvoicePdf(
     },
 
     layout: {
-      hLineWidth: (
-        i: number,
-        node: any
-      ) => {
-        if (
-          i === 0 ||
-          i ===
-            node.table.body.length
-        ) {
-          return 0;
-        }
 
-        return 1;
-      },
+      // Horizontal lines
 
-      vLineWidth: () => 0,
+      hLineWidth:
+        (
+          i: number,
+          node: any
+        ) => {
 
-      hLineColor: () =>
-        BORDER,
+          if (
+            i === 0
+          ) {
+            return 0;
+          }
 
-      paddingLeft: () => 0,
+          return 1;
+        },
 
-      paddingRight: () => 0,
+      hLineColor:
+        () =>
+          BORDER,
 
-      paddingTop: () => 0,
+      // No vertical borders
 
-      paddingBottom: () => 0,
+      vLineWidth:
+        () => 0,
+
+      // Remove default cell padding
+
+      paddingLeft:
+        () => 0,
+
+      paddingRight:
+        () => 0,
+
+      paddingTop:
+        () => 0,
+
+      paddingBottom:
+        () => 0,
     },
+
+    margin: [
+      0,
+      10,
+      0,
+      0,
+    ],
   };
 
   // ===================================================
@@ -748,26 +776,31 @@ export async function generateInvoicePdf(
   // ===================================================
 
   const totalSection: Content = {
-    text: [
-      {
-        text:
-          "المجموع الكلي: ",
-        bold: true,
-      },
 
-      String(total),
+    text: [
 
       " ل.س",
+
+      String(
+        invoice.total ??
+        total
+      ),
+
+      " الكلي: "+"المجموع",
+
     ],
 
-    fontSize: 22,
+    fontSize:
+      22,
 
-    bold: true,
+    bold:
+      true,
 
-    color: GREEN,
+    color:
+      GREEN,
 
     alignment:
-      "right",
+      "left",
 
     margin: [
       0,
@@ -778,99 +811,97 @@ export async function generateInvoicePdf(
   };
 
   // ===================================================
-  // Signature
+  // Document Definition
   // ===================================================
 
-  const signatureSection: Content =
-    signature
+  const documentDefinition:
+    TDocumentDefinitions = {
+
+    pageSize:
+      "A4",
+
+    pageOrientation:
+      "portrait",
+
+    pageMargins: [
+      35,
+      30,
+      35,
+      250,
+    ],
+
+    defaultStyle: {
+      font:
+        "Cairo",
+
+      fontSize:
+        12,
+
+      color:
+        TEXT,
+
+      alignment:
+        "right",
+    },
+
+    // =================================================
+    // Main Content
+    // =================================================
+
+    content: [
+
+      header,
+
+      headerLine,
+
+      invoiceInfo,
+
+      sectionTitle(
+        " العميل "+" بيانات"
+      ),
+
+      customer,
+
+      sectionTitle(
+        "الفاتورة "+ "تفاصيل "
+      ),
+
+      invoiceTable,
+
+      totalSection,
+    ],
+
+    // =================================================
+    // Signature Footer
+    // =================================================
+
+    footer: signature
       ? {
           image:
             signature,
 
-          width: 180,
+          width:
+            600,
 
-          height: 100,
+          height:
+            250,
 
-          fit: [
-            180,
-            100,
-          ],
 
           alignment:
             "center",
 
           margin: [
             0,
-            60,
+            0,
             0,
             0,
           ],
         }
-      : {
-          text: "",
-
-          margin: [
-            0,
-            60,
-            0,
-            0,
-          ],
-        };
+      : undefined,
+  };
 
   // ===================================================
-  // Document Definition
-  // ===================================================
-
-  const documentDefinition:
-    TDocumentDefinitions = {
-      pageSize:
-        "A4",
-
-      pageOrientation:
-        "portrait",
-
-      pageMargins: [
-        30,
-        30,
-        30,
-        30,
-      ],
-
-      defaultStyle: {
-        font:
-          "Cairo",
-
-        fontSize:
-          12,
-
-        color:
-          TEXT,
-
-        alignment:
-          "right",
-      },
-
-      content: [
-        header,
-
-        invoiceInfo,
-
-        customerTitle,
-
-        customerInfo,
-
-        detailsTitle,
-
-        invoiceTable,
-
-        totalSection,
-
-        signatureSection,
-      ],
-    };
-
-  // ===================================================
-  // Generate
+  // Generate PDF
   // ===================================================
 
   console.log(

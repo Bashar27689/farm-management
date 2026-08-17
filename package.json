@@ -29,7 +29,6 @@
     "next": "16.3.0",
     "pdfmake": "^0.3.11",
     "postcss": "^8.5.26",
-    "puppeteer": "^25.5.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.17.0",
@@ -64,7 +63,6 @@
     }
   },
   "allowScripts": {
-    "puppeteer@25.5.0": true,
     "@prisma/engines@7.9.1": true,
     "prisma@7.9.1": true,
     "esbuild@0.28.2": true,
