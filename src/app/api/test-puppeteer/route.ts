@@ -1,38 +1,139 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import puppeteer from "puppeteer";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const puppeteerPath = path.join(
-    process.cwd(),
-    "node_modules",
-    "puppeteer"
-  );
+  let browser = null;
 
-  const packageJsonPath = path.join(
-    puppeteerPath,
-    "package.json"
-  );
+  try {
+    console.log("=== PUPPETEER TEST START ===");
 
-  return NextResponse.json({
-    cwd: process.cwd(),
+    console.log(
+      "Puppeteer executable:",
+      puppeteer.executablePath()
+    );
 
-    puppeteerDirectoryExists:
-      fs.existsSync(puppeteerPath),
+    browser = await puppeteer.launch({
+      headless: true,
 
-    puppeteerPackageExists:
-      fs.existsSync(packageJsonPath),
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    });
 
-    puppeteerPackage:
-      fs.existsSync(packageJsonPath)
-        ? JSON.parse(
-            fs.readFileSync(
-              packageJsonPath,
-              "utf8"
-            )
-          ).version
-        : null,
-  });
+    console.log(
+      "=== BROWSER LAUNCHED ==="
+    );
+
+    const page =
+      await browser.newPage();
+
+    await page.setContent(`
+      <!DOCTYPE html>
+
+      <html
+        lang="ar"
+        dir="rtl"
+      >
+
+      <head>
+
+        <meta charset="UTF-8">
+
+        <style>
+
+          body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            padding: 40px;
+          }
+
+        </style>
+
+      </head>
+
+      <body>
+
+        <h1>
+          اختبار Puppeteer
+        </h1>
+
+        <p>
+          مرحباً من Hostinger
+        </p>
+
+      </body>
+
+      </html>
+    `);
+
+    console.log(
+      "=== HTML LOADED ==="
+    );
+
+    const pdf =
+      await page.pdf({
+        format: "A4",
+        printBackground: true,
+      });
+
+    console.log(
+      "=== PDF GENERATED ===",
+      pdf.length
+    );
+
+    return new NextResponse(
+      Buffer.from(pdf),
+      {
+        status: 200,
+
+        headers: {
+          "Content-Type":
+            "application/pdf",
+
+          "Content-Disposition":
+            'inline; filename="test.pdf"',
+        },
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "=== PUPPETEER ERROR ==="
+    );
+
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        success: false,
+
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
+      {
+        status: 500,
+      }
+    );
+
+  } finally {
+
+    if (browser) {
+
+      try {
+
+        await browser.close();
+
+      } catch {}
+
+    }
+
+  }
 }
