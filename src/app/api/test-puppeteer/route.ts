@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import puppeteer from "puppeteer";
+import { createRequire } from "module";
 
 export const runtime = "nodejs";
+
+const require = createRequire(import.meta.url);
 
 export async function GET() {
   let browser = null;
@@ -9,14 +11,20 @@ export async function GET() {
   try {
     console.log("=== PUPPETEER TEST START ===");
 
+    const puppeteer = require("puppeteer");
+
+    console.log("Puppeteer loaded");
+
+    const executablePath =
+      puppeteer.executablePath();
+
     console.log(
       "Executable path:",
-      puppeteer.executablePath()
+      executablePath
     );
 
     browser = await puppeteer.launch({
       headless: true,
-  dumpio: true,
 
       args: [
         "--no-sandbox",
@@ -30,7 +38,8 @@ export async function GET() {
       "Browser launched successfully"
     );
 
-    const page = await browser.newPage();
+    const page =
+      await browser.newPage();
 
     console.log(
       "Page created successfully"
@@ -69,10 +78,11 @@ export async function GET() {
       "HTML loaded successfully"
     );
 
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-    });
+    const pdf =
+      await page.pdf({
+        format: "A4",
+        printBackground: true,
+      });
 
     console.log(
       "PDF generated successfully:",
@@ -139,5 +149,6 @@ export async function GET() {
       }
 
     }
+
   }
 }
