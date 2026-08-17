@@ -1,68 +1,50 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
+import { Readable } from "stream";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    console.log("=== STDIN FD TEST ===");
+    console.log("=== STDIN OVERRIDE TEST ===");
 
-    const result: Record<string, unknown> = {
-      nodeVersion: process.version,
-      execPath: process.execPath,
-      pid: process.pid,
-    };
+    const fakeStdin = new Readable({
+      read() {
+        this.push(null);
+      },
+    });
 
-    // Check Linux file descriptor 0 directly
-    try {
-      result.fd0 = fs.readlinkSync(
-        `/proc/${process.pid}/fd/0`
-      );
-    } catch (error) {
-      result.fd0Error =
-        error instanceof Error
-          ? error.message
-          : String(error);
-    }
-
-    // Check file descriptor 1
-    try {
-      result.fd1 = fs.readlinkSync(
-        `/proc/${process.pid}/fd/1`
-      );
-    } catch (error) {
-      result.fd1Error =
-        error instanceof Error
-          ? error.message
-          : String(error);
-    }
-
-    // Check file descriptor 2
-    try {
-      result.fd2 = fs.readlinkSync(
-        `/proc/${process.pid}/fd/2`
-      );
-    } catch (error) {
-      result.fd2Error =
-        error instanceof Error
-          ? error.message
-          : String(error);
-    }
+    Object.defineProperty(
+      process,
+      "stdin",
+      {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: fakeStdin,
+      }
+    );
 
     console.log(
-      "FD information:",
-      result
+      "process.stdin replaced"
+    );
+
+    console.log(
+      "stdin readable:",
+      process.stdin.readable
     );
 
     return NextResponse.json({
       success: true,
-      result,
+      message:
+        "process.stdin override works",
+      readable:
+        process.stdin.readable,
     });
 
   } catch (error) {
 
     console.error(
-      "=== FD TEST ERROR ==="
+      "=== STDIN OVERRIDE ERROR ==="
     );
 
     console.error(error);
