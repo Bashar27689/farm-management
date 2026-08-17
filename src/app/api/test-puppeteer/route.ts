@@ -70,20 +70,17 @@ export async function GET() {
       pdf.length
     );
 
-    return NextResponse.json({
-      success: true,
+return NextResponse.json({
+  success: true,
 
-      puppeteerVersion:
-        puppeteer.default.version,
+  executablePath,
 
-      executablePath,
+  pdfSize:
+    pdf.length,
 
-      pdfSize:
-        pdf.length,
-
-      message:
-        "Puppeteer و Chromium يعملان بنجاح",
-    });
+  message:
+    "Puppeteer و Chromium يعملان بنجاح",
+});
 
   } catch (error) {
 
