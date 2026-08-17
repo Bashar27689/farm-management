@@ -1,154 +1,38 @@
 import { NextResponse } from "next/server";
-import { createRequire } from "module";
+import fs from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
 
-const require = createRequire(import.meta.url);
-
 export async function GET() {
-  let browser = null;
+  const puppeteerPath = path.join(
+    process.cwd(),
+    "node_modules",
+    "puppeteer"
+  );
 
-  try {
-    console.log("=== PUPPETEER TEST START ===");
+  const packageJsonPath = path.join(
+    puppeteerPath,
+    "package.json"
+  );
 
-    const puppeteer = require("puppeteer");
+  return NextResponse.json({
+    cwd: process.cwd(),
 
-    console.log("Puppeteer loaded");
+    puppeteerDirectoryExists:
+      fs.existsSync(puppeteerPath),
 
-    const executablePath =
-      puppeteer.executablePath();
+    puppeteerPackageExists:
+      fs.existsSync(packageJsonPath),
 
-    console.log(
-      "Executable path:",
-      executablePath
-    );
-
-    browser = await puppeteer.launch({
-      headless: true,
-
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
-
-    console.log(
-      "Browser launched successfully"
-    );
-
-    const page =
-      await browser.newPage();
-
-    console.log(
-      "Page created successfully"
-    );
-
-    await page.setContent(`
-      <!DOCTYPE html>
-      <html lang="ar" dir="rtl">
-
-      <head>
-        <meta charset="UTF-8">
-
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            direction: rtl;
-            padding: 40px;
-          }
-        </style>
-      </head>
-
-      <body>
-
-        <h1>اختبار Puppeteer</h1>
-
-        <p>
-          مرحبا من Hostinger
-        </p>
-
-      </body>
-
-      </html>
-    `);
-
-    console.log(
-      "HTML loaded successfully"
-    );
-
-    const pdf =
-      await page.pdf({
-        format: "A4",
-        printBackground: true,
-      });
-
-    console.log(
-      "PDF generated successfully:",
-      pdf.length,
-      "bytes"
-    );
-
-    return new NextResponse(
-      Buffer.from(pdf),
-      {
-        status: 200,
-
-        headers: {
-          "Content-Type":
-            "application/pdf",
-
-          "Content-Disposition":
-            'inline; filename="test.pdf"',
-        },
-      }
-    );
-
-  } catch (error) {
-
-    console.error(
-      "=== PUPPETEER TEST ERROR ==="
-    );
-
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        success: false,
-
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      },
-      {
-        status: 500,
-      }
-    );
-
-  } finally {
-
-    if (browser) {
-
-      try {
-
-        await browser.close();
-
-        console.log(
-          "Browser closed"
-        );
-
-      } catch (error) {
-
-        console.error(
-          "Browser close error:",
-          error
-        );
-
-      }
-
-    }
-
-  }
+    puppeteerPackage:
+      fs.existsSync(packageJsonPath)
+        ? JSON.parse(
+            fs.readFileSync(
+              packageJsonPath,
+              "utf8"
+            )
+          ).version
+        : null,
+  });
 }
