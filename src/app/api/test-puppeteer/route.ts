@@ -16,6 +16,7 @@ export async function GET() {
 
     browser = await puppeteer.launch({
       headless: true,
+  dumpio: true,
 
       args: [
         "--no-sandbox",
