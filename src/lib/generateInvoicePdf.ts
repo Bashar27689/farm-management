@@ -242,11 +242,14 @@ export async function generateInvoicePdf(
               true,
             ],
 
-            borderColor:
-              GREEN,
+            borderColor: [
+  GREEN,
+  GREEN,
+  GREEN,
+  GREEN,
+],
 
-            borderWidth:
-              2,
+           
 
             margin: [
               0,
@@ -279,11 +282,13 @@ export async function generateInvoicePdf(
                   true,
                 ],
 
-                borderColor:
-                  GREEN,
+                borderColor: [
+  GREEN,
+  GREEN,
+  GREEN,
+  GREEN,
+],
 
-                borderWidth:
-                  2,
 
                 margin: [
                   0,
@@ -302,11 +307,13 @@ export async function generateInvoicePdf(
                   true,
                 ],
 
-                borderColor:
-                  GREEN,
-
-                borderWidth:
-                  2,
+               borderColor: [
+  GREEN,
+  GREEN,
+  GREEN,
+  GREEN,
+],
+             
 
                 margin: [
                   0,
