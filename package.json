@@ -8,7 +8,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate && puppeteer browsers install chrome"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -27,6 +27,7 @@
     "lucide-react": "^1.31.0",
     "minimatch": "^10.2.6",
     "next": "16.3.0",
+    "pdfmake": "^0.3.11",
     "postcss": "^8.5.26",
     "puppeteer": "^25.5.0",
     "react": "19.2.4",
@@ -41,6 +42,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.43",
+    "@types/pdfmake": "^0.3.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9.39.5",

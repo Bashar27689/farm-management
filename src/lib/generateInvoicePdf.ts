@@ -1,6 +1,16 @@
-import fs from "fs";
-import path from "path";
+// src/lib/generateInvoicePdf.ts
 
+import fs from "node:fs";
+import path from "node:path";
+
+import type {
+  TDocumentDefinitions,
+  Content,
+} from "pdfmake/interfaces";
+
+import {
+  createPdf,
+} from "./pdf/pdfmake";
 
 // =====================================================
 // Types
@@ -10,30 +20,25 @@ type InvoicePdfInput = {
   invoice: any;
 };
 
-
 // =====================================================
-// Image → Base64
+// Asset → Base64
 // =====================================================
 
 function getImageBase64(
   filePath: string
 ): string {
-
   try {
-
     const absolutePath =
       path.join(
         process.cwd(),
         filePath
       );
 
-
     if (
       !fs.existsSync(
         absolutePath
       )
     ) {
-
       console.warn(
         "PDF Asset not found:",
         absolutePath
@@ -42,12 +47,10 @@ function getImageBase64(
       return "";
     }
 
-
     const buffer =
       fs.readFileSync(
         absolutePath
       );
-
 
     const extension =
       path
@@ -55,35 +58,26 @@ function getImageBase64(
         .replace(".", "")
         .toLowerCase();
 
-
     let mimeType =
       "image/png";
-
 
     if (
       extension === "jpg" ||
       extension === "jpeg"
     ) {
-
       mimeType =
         "image/jpeg";
-
     } else if (
       extension === "webp"
     ) {
-
       mimeType =
         "image/webp";
-
     } else if (
       extension === "svg"
     ) {
-
       mimeType =
         "image/svg+xml";
-
     }
-
 
     return (
       `data:${mimeType};base64,` +
@@ -91,7 +85,6 @@ function getImageBase64(
     );
 
   } catch (error) {
-
     console.error(
       "PDF Image Error:",
       error
@@ -101,66 +94,20 @@ function getImageBase64(
   }
 }
 
-
 // =====================================================
-// Cairo Font → Base64
-// =====================================================
-
-function getFontBase64(): string {
-
-  try {
-
-    const fontPath =
-      path.join(
-        process.cwd(),
-        "public/fonts/Cairo-Regular.ttf"
-      );
-
-
-    if (
-      !fs.existsSync(
-        fontPath
-      )
-    ) {
-
-      console.warn(
-        "PDF Font not found:",
-        fontPath
-      );
-
-      return "";
-    }
-
-
-    const font =
-      fs.readFileSync(
-        fontPath
-      );
-
-
-    return font.toString(
-      "base64"
-    );
-
-  } catch (error) {
-
-    console.error(
-      "PDF Font Error:",
-      error
-    );
-
-    return "";
-  }
-}
-
-
-// =====================================================
-// Generate Invoice HTML
+// Generate Invoice PDF
 // =====================================================
 
-function generateInvoiceHtml(
-  invoice: any
-): string {
+export async function generateInvoicePdf(
+  input: InvoicePdfInput
+): Promise<Buffer> {
+
+  console.log(
+    "PDF: starting generation"
+  );
+
+  const invoice =
+    input.invoice;
 
   // ===================================================
   // Parse Invoice Items
@@ -168,41 +115,30 @@ function generateInvoiceHtml(
 
   let items: any = {};
 
-
   try {
-
     items =
       typeof invoice.items === "string"
         ? JSON.parse(invoice.items)
         : invoice.items;
 
-  } catch {
+  } catch (error) {
+    console.warn(
+      "PDF: failed to parse invoice items",
+      error
+    );
 
-    items = {
-      shopName: "بيض",
-      trayCount: 0,
-      pricePerTray: 0,
-    };
-
+    items = {};
   }
-
 
   if (
     !items ||
     typeof items !== "object"
   ) {
-
-    items = {
-      shopName: "بيض",
-      trayCount: 0,
-      pricePerTray: 0,
-    };
-
+    items = {};
   }
 
-
   // ===================================================
-  // Calculate Total
+  // Invoice Values
   // ===================================================
 
   const trayCount =
@@ -210,17 +146,18 @@ function generateInvoiceHtml(
       items.trayCount || 0
     );
 
-
   const pricePerTray =
     Number(
       items.pricePerTray || 0
     );
 
-
-  const total =
+  const calculatedTotal =
     trayCount *
     pricePerTray;
 
+  const total =
+    invoice.total ??
+    calculatedTotal;
 
   // ===================================================
   // Assets
@@ -231,19 +168,13 @@ function generateInvoiceHtml(
       "public/assets/farm-Logo.png"
     );
 
-
   const signature =
     getImageBase64(
       "public/assets/Signature.png"
     );
 
-
-  const font =
-    getFontBase64();
-
-
   // ===================================================
-  // Invoice Date
+  // Date
   // ===================================================
 
   const date =
@@ -258,633 +189,696 @@ function generateInvoiceHtml(
       }
     );
 
+  // ===================================================
+  // Colors
+  // ===================================================
+
+  const GREEN =
+    "#1B5E20";
+
+  const LIGHT_GRAY =
+    "#F5F5F5";
+
+  const BORDER =
+    "#DDDDDD";
+
+  const TEXT =
+    "#333333";
 
   // ===================================================
-  // Generate HTML
+  // Header
   // ===================================================
 
-  return `
-<!DOCTYPE html>
-
-<html
-  lang="ar"
-  dir="rtl"
->
-
-<head>
-
-<meta charset="UTF-8">
-
-<style>
-
-@font-face {
-
-  font-family: "Cairo";
-
-  src:
-    url(
-      data:font/ttf;base64,${font}
-    );
-
-  font-weight: normal;
-
-  font-style: normal;
-
-}
-
-* {
-
-  box-sizing: border-box;
-
-}
-
-html,
-body {
-
-  margin: 0;
-
-  padding: 0;
-
-}
-
-body {
-
-  font-family:
-    "Cairo",
-    Arial,
-    sans-serif;
-
-  direction: rtl;
-
-  padding: 5px;
-
-  color: #333;
-
-  background: white;
-
-}
-
-.header {
-
-  display: flex;
-
-  justify-content:
-    space-between;
-
-  align-items:
-    center;
-
-  border-bottom:
-    2px solid #1B5E20;
-
-  padding-bottom:
-    20px;
-
-}
-
-.logo {
-
-  width:
-    100px;
-
-  height:
-    100px;
-
-  object-fit:
-    contain;
-
-}
-
-.title {
-
-  text-align:
-    right;
-
-}
-
-.title h1 {
-
-  margin:
-    0;
-
-  color:
-    #1B5E20;
-
-  font-size:
-    28px;
-
-}
-
-.info {
-
-  display:
-    flex;
-
-  justify-content:
-    space-between;
-
-  margin-top:
-    20px;
-
-}
-
-.section {
-
-  margin-top:
-    25px;
-
-  font-size:
-    20px;
-
-  font-weight:
-    bold;
-
-  color:
-    #1B5E20;
-
-}
-
-.customer {
-
-  background:
-    #f5f5f5;
-
-  padding:
-    15px;
-
-  margin-top:
-    10px;
-
-}
-
-.customer div {
-
-  margin-bottom:
-    5px;
-
-}
-
-table {
-
-  width:
-    100%;
-
-  border-collapse:
-    collapse;
-
-  margin-top:
-    20px;
-
-}
-
-th {
-
-  background:
-    #1B5E20;
-
-  color:
-    white;
-
-  padding:
-    10px;
-
-}
-
-td {
-
-  padding:
-    10px;
-
-  border-bottom:
-    1px solid #ddd;
-
-  text-align:
-    center;
-
-}
-
-.total {
-
-  margin-top:
-    30px;
-
-  font-size:
-    22px;
-
-  font-weight:
-    bold;
-
-  color:
-    #1B5E20;
-
-  text-align:
-    left;
-
-}
-
-.signature {
-
-  margin-top:
-    70px;
-
-  text-align:
-    center;
-
-}
-
-.signature img {
-
-  max-width:
-    100%;
-
-  max-height:
-    180px;
-
-  object-fit:
-    contain;
-
-}
-
-</style>
-
-</head>
-
-
-<body>
-
-
-<div class="header">
-
-
-  <div>
-
-    ${
-      logo
-        ? `
-          <img
-            class="logo"
-            src="${logo}"
-          >
-        `
-        : ""
-    }
-
-  </div>
-
-
-  <div class="title">
-
-    <h1>
-      فاتورة مبيعات
-    </h1>
-
-  </div>
-
-
-</div>
-
-
-<div class="info">
-
-
-  <div>
-
-    التاريخ:
-    ${date}
-
-  </div>
-
-
-  <div>
-
-    رقم الفاتورة:
-    ${invoice.number}
-
-  </div>
-
-
-</div>
-
-
-<div class="section">
-
-  بيانات العميل
-
-</div>
-
-
-<div class="customer">
-
-
-  <div>
-
-    الاسم:
-    ${invoice.customer?.name ?? ""}
-
-  </div>
-
-
-  <div>
-
-    الهاتف:
-    ${invoice.customer?.phone ?? ""}
-
-  </div>
-
-
-</div>
-
-
-<div class="section">
-
-  تفاصيل الفاتورة
-
-</div>
-
-
-<table>
-
-  <thead>
-
-    <tr>
-
-      <th>
-        اسم الدكان
-      </th>
-
-      <th>
-        الكمية
-      </th>
-
-      <th>
-        السعر
-      </th>
-
-      <th>
-        المجموع
-      </th>
-
-    </tr>
-
-  </thead>
-
-
-  <tbody>
-
-    <tr>
-
-      <td>
-        ${items.shopName ?? "بيض"}
-      </td>
-
-      <td>
-        ${items.trayCount ?? 0}
-      </td>
-
-      <td>
-        ${items.pricePerTray ?? 0}
-      </td>
-
-      <td>
-        ${total}
-      </td>
-
-    </tr>
-
-  </tbody>
-
-</table>
-
-
-<div class="total">
-
-  المجموع الكلي:
-  ${invoice.total ?? total}
-  ل.س
-
-</div>
-
-
-<div class="signature">
-
-  ${
-    signature
-      ? `
-        <img
-          src="${signature}"
-        >
-      `
-      : ""
-  }
-
-</div>
-
-
-</body>
-
-</html>
-`;
-}
-
-
-// =====================================================
-// Generate PDF
-// =====================================================
-
-export async function generateInvoicePdf(
-  input: InvoicePdfInput
-): Promise<Buffer> {
-
-  let browser:
-    Awaited<
-      ReturnType<
-        typeof import("puppeteer")["launch"]
-      >
-    > | null = null;
-
-
-  try {
-
-    console.log(
-      "PDF: starting generation"
-    );
-
-
-    // =================================================
-    // Generate HTML
-    // =================================================
-
-    const html =
-      generateInvoiceHtml(
-        input.invoice
-      );
-
-
-    console.log(
-      "PDF: HTML generated"
-    );
-
-
-    // =================================================
-    // Load Puppeteer
-    // =================================================
-
-    console.log(
-      "PDF: loading Puppeteer"
-    );
-
-
-    const puppeteer =
-      await import(
-        "puppeteer"
-      );
-
-
-    console.log(
-      "PDF: Puppeteer loaded"
-    );
-
-
-    // =================================================
-    // Launch Chromium
-    // =================================================
-
-    console.log(
-      "PDF: launching Chromium"
-    );
-
-
-    browser =
-      await puppeteer.default.launch({
-
-        headless: true,
-
-        args: [
-
-          "--no-sandbox",
-
-          "--disable-setuid-sandbox",
-
-          "--disable-dev-shm-usage",
-
-          "--disable-gpu",
-
-          "--disable-software-rasterizer",
-
-          "--no-first-run",
-
-          "--no-default-browser-check",
-
+  const header: Content = {
+    table: {
+      widths: [
+        "*",
+        "auto",
+      ],
+
+      body: [
+        [
+          {
+            stack: [
+              {
+                text:
+                  "فاتورة مبيعات",
+
+                fontSize: 28,
+
+                bold: true,
+
+                color: GREEN,
+
+                alignment:
+                  "right",
+              },
+            ],
+
+            border: [
+              false,
+              false,
+              false,
+              true,
+            ],
+
+            borderColor:
+              GREEN,
+
+            borderWidth:
+              2,
+
+            margin: [
+              0,
+              20,
+              0,
+              20,
+            ],
+          },
+
+          logo
+            ? {
+                image: logo,
+
+                width: 100,
+
+                height: 100,
+
+                fit: [
+                  100,
+                  100,
+                ],
+
+                alignment:
+                  "left",
+
+                border: [
+                  false,
+                  false,
+                  false,
+                  true,
+                ],
+
+                borderColor:
+                  GREEN,
+
+                borderWidth:
+                  2,
+
+                margin: [
+                  0,
+                  0,
+                  0,
+                  20,
+                ],
+              }
+            : {
+                text: "",
+
+                border: [
+                  false,
+                  false,
+                  false,
+                  true,
+                ],
+
+                borderColor:
+                  GREEN,
+
+                borderWidth:
+                  2,
+
+                margin: [
+                  0,
+                  0,
+                  0,
+                  20,
+                ],
+              },
+        ],
+      ],
+    },
+
+    layout: {
+      hLineWidth: () => 0,
+
+      vLineWidth: () => 0,
+
+      paddingLeft: () => 0,
+
+      paddingRight: () => 0,
+
+      paddingTop: () => 0,
+
+      paddingBottom: () => 0,
+    },
+  };
+
+  // ===================================================
+  // Invoice Information
+  // ===================================================
+
+  const invoiceInfo: Content = {
+    columns: [
+      {
+        text: [
+          {
+            text: "التاريخ: ",
+            bold: true,
+          },
+
+          date,
         ],
 
-      });
+        alignment:
+          "right",
+      },
 
-
-    console.log(
-      "PDF: Chromium launched"
-    );
-
-
-    // =================================================
-    // Create Page
-    // =================================================
-
-    const page =
-      await browser.newPage();
-
-
-    console.log(
-      "PDF: page created"
-    );
-
-
-    // =================================================
-    // Set HTML
-    // =================================================
-
-    await page.setContent(
-      html,
       {
-        waitUntil:
-          "load",
-      }
+        text: [
+          {
+            text:
+              "رقم الفاتورة: ",
+            bold: true,
+          },
+
+          String(
+            invoice.number ??
+            ""
+          ),
+        ],
+
+        alignment:
+          "right",
+      },
+    ],
+
+    margin: [
+      0,
+      20,
+      0,
+      0,
+    ],
+  };
+
+  // ===================================================
+  // Customer Section Title
+  // ===================================================
+
+  const customerTitle: Content = {
+    text:
+      "بيانات العميل",
+
+    fontSize: 20,
+
+    bold: true,
+
+    color: GREEN,
+
+    alignment:
+      "right",
+
+    margin: [
+      0,
+      25,
+      0,
+      10,
+    ],
+  };
+
+  // ===================================================
+  // Customer Information
+  // ===================================================
+
+  const customerInfo: Content = {
+    table: {
+      widths: [
+        "*",
+      ],
+
+      body: [
+        [
+          {
+            stack: [
+              {
+                text: [
+                  {
+                    text:
+                      "الاسم: ",
+                    bold: true,
+                  },
+
+                  String(
+                    invoice.customer
+                      ?.name ??
+                    ""
+                  ),
+                ],
+
+                alignment:
+                  "right",
+
+                margin: [
+                  0,
+                  0,
+                  0,
+                  5,
+                ],
+              },
+
+              {
+                text: [
+                  {
+                    text:
+                      "الهاتف: ",
+                    bold: true,
+                  },
+
+                  String(
+                    invoice.customer
+                      ?.phone ??
+                    ""
+                  ),
+                ],
+
+                alignment:
+                  "right",
+              },
+            ],
+
+            fillColor:
+              LIGHT_GRAY,
+
+            margin: [
+              15,
+              15,
+              15,
+              15,
+            ],
+          },
+        ],
+      ],
+    },
+
+    layout: {
+      hLineWidth: () => 0,
+
+      vLineWidth: () => 0,
+
+      paddingLeft: () => 0,
+
+      paddingRight: () => 0,
+
+      paddingTop: () => 0,
+
+      paddingBottom: () => 0,
+    },
+  };
+
+  // ===================================================
+  // Details Title
+  // ===================================================
+
+  const detailsTitle: Content = {
+    text:
+      "تفاصيل الفاتورة",
+
+    fontSize: 20,
+
+    bold: true,
+
+    color: GREEN,
+
+    alignment:
+      "right",
+
+    margin: [
+      0,
+      25,
+      0,
+      10,
+    ],
+  };
+
+  // ===================================================
+  // Invoice Table
+  // ===================================================
+
+  const invoiceTable: Content = {
+    table: {
+      headerRows: 1,
+
+      widths: [
+        "*",
+        "auto",
+        "auto",
+        "auto",
+      ],
+
+      body: [
+        [
+          {
+            text:
+              "اسم الدكان",
+
+            bold: true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+
+          {
+            text:
+              "الكمية",
+
+            bold: true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+
+          {
+            text:
+              "السعر",
+
+            bold: true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+
+          {
+            text:
+              "المجموع",
+
+            bold: true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+        ],
+
+        [
+          {
+            text:
+              String(
+                items.shopName ??
+                "بيض"
+              ),
+
+            alignment:
+              "right",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+
+          {
+            text:
+              String(
+                items.trayCount ??
+                0
+              ),
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+
+          {
+            text:
+              String(
+                items.pricePerTray ??
+                0
+              ),
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+
+          {
+            text:
+              String(
+                calculatedTotal
+              ),
+
+            alignment:
+              "center",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+        ],
+      ],
+    },
+
+    layout: {
+      hLineWidth: (
+        i: number,
+        node: any
+      ) => {
+        if (
+          i === 0 ||
+          i ===
+            node.table.body.length
+        ) {
+          return 0;
+        }
+
+        return 1;
+      },
+
+      vLineWidth: () => 0,
+
+      hLineColor: () =>
+        BORDER,
+
+      paddingLeft: () => 0,
+
+      paddingRight: () => 0,
+
+      paddingTop: () => 0,
+
+      paddingBottom: () => 0,
+    },
+  };
+
+  // ===================================================
+  // Total
+  // ===================================================
+
+  const totalSection: Content = {
+    text: [
+      {
+        text:
+          "المجموع الكلي: ",
+        bold: true,
+      },
+
+      String(total),
+
+      " ل.س",
+    ],
+
+    fontSize: 22,
+
+    bold: true,
+
+    color: GREEN,
+
+    alignment:
+      "right",
+
+    margin: [
+      0,
+      30,
+      0,
+      0,
+    ],
+  };
+
+  // ===================================================
+  // Signature
+  // ===================================================
+
+  const signatureSection: Content =
+    signature
+      ? {
+          image:
+            signature,
+
+          width: 180,
+
+          height: 100,
+
+          fit: [
+            180,
+            100,
+          ],
+
+          alignment:
+            "center",
+
+          margin: [
+            0,
+            60,
+            0,
+            0,
+          ],
+        }
+      : {
+          text: "",
+
+          margin: [
+            0,
+            60,
+            0,
+            0,
+          ],
+        };
+
+  // ===================================================
+  // Document Definition
+  // ===================================================
+
+  const documentDefinition:
+    TDocumentDefinitions = {
+      pageSize:
+        "A4",
+
+      pageOrientation:
+        "portrait",
+
+      pageMargins: [
+        30,
+        30,
+        30,
+        30,
+      ],
+
+      defaultStyle: {
+        font:
+          "Cairo",
+
+        fontSize:
+          12,
+
+        color:
+          TEXT,
+
+        alignment:
+          "right",
+      },
+
+      content: [
+        header,
+
+        invoiceInfo,
+
+        customerTitle,
+
+        customerInfo,
+
+        detailsTitle,
+
+        invoiceTable,
+
+        totalSection,
+
+        signatureSection,
+      ],
+    };
+
+  // ===================================================
+  // Generate
+  // ===================================================
+
+  console.log(
+    "PDF: generating with pdfmake"
+  );
+
+  const pdf =
+    await createPdf(
+      documentDefinition
     );
 
+  console.log(
+    "PDF: generated",
+    pdf.length
+  );
 
-    console.log(
-      "PDF: content loaded"
-    );
-
-
-    // =================================================
-    // Generate PDF
-    // =================================================
-
-    const pdf =
-      await page.pdf({
-
-        format:
-          "A4",
-
-        printBackground:
-          true,
-
-        preferCSSPageSize:
-          false,
-
-      });
-
-
-    console.log(
-      "PDF: PDF generated"
-    );
-
-
-    // =================================================
-    // IMPORTANT
-    // Always return Buffer
-    // =================================================
-
-    return Buffer.from(
-      pdf
-    );
-
-  } catch (error) {
-
-    console.error(
-      "PDF Generation Error:",
-      error
-    );
-
-    throw error;
-
-  } finally {
-
-    // =================================================
-    // Always Close Browser
-    // =================================================
-
-    if (browser) {
-
-      try {
-
-        await browser.close();
-
-        console.log(
-          "PDF: Chromium closed"
-        );
-
-      } catch (error) {
-
-        console.error(
-          "PDF: Chromium close error:",
-          error
-        );
-
-      }
-
-    }
-
-  }
-
+  return pdf;
 }
