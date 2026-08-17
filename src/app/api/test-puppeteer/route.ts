@@ -3,92 +3,35 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 export async function GET() {
-  let browser = null;
-
   try {
-    console.log("=== PUPPETEER TEST START ===");
+    console.log("=== NODE STDIN TEST ===");
 
-    const puppeteer = await import("puppeteer");
-
-    console.log("Puppeteer loaded");
-
-    const executablePath =
-      puppeteer.default.executablePath();
-
-    console.log(
-      "Puppeteer executable path:",
-      executablePath
-    );
-
-    browser =
-      await puppeteer.default.launch({
-        headless: true,
-
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-software-rasterizer",
-          "--no-first-run",
-          "--no-default-browser-check",
-        ],
-      });
+    const result = {
+      stdinExists: !!process.stdin,
+      stdinReadable: process.stdin.readable,
+      stdinDestroyed: process.stdin.destroyed,
+      stdinFd:
+        typeof process.stdin.fd === "number"
+          ? process.stdin.fd
+          : null,
+    };
 
     console.log(
-      "Chromium launched successfully"
+      "STDIN:",
+      result
     );
 
-    const page =
-      await browser.newPage();
-
-    await page.setContent(`
-      <!DOCTYPE html>
-      <html lang="ar" dir="rtl">
-        <head>
-          <meta charset="UTF-8">
-          <title>Puppeteer Test</title>
-        </head>
-
-        <body>
-          <h1>اختبار Puppeteer</h1>
-          <p>Chrome يعمل بنجاح على Hostinger.</p>
-        </body>
-      </html>
-    `);
-
-    console.log("Page loaded");
-
-    const pdf =
-      await page.pdf({
-        format: "A4",
-        printBackground: true,
-      });
-
-    console.log(
-      "PDF generated:",
-      pdf.length
-    );
-
-return NextResponse.json({
-  success: true,
-
-  executablePath,
-
-  pdfSize:
-    pdf.length,
-
-  message:
-    "Puppeteer و Chromium يعملان بنجاح",
-});
+    return NextResponse.json({
+      success: true,
+      ...result,
+    });
 
   } catch (error) {
 
     console.error(
-      "=== PUPPETEER TEST FAILED ==="
+      "STDIN TEST FAILED:",
+      error
     );
-
-    console.error(error);
 
     return NextResponse.json(
       {
@@ -108,29 +51,5 @@ return NextResponse.json({
         status: 500,
       }
     );
-
-  } finally {
-
-    if (browser) {
-
-      try {
-
-        await browser.close();
-
-        console.log(
-          "Browser closed"
-        );
-
-      } catch (error) {
-
-        console.error(
-          "Browser close error:",
-          error
-        );
-
-      }
-
-    }
-
   }
 }
