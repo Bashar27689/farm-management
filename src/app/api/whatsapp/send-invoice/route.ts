@@ -229,6 +229,7 @@ async function sendWhatsAppInvoiceTemplate(
   to: string,
   mediaId: string,
   filename: string,
+  customerName: string,
   invoiceNumber: string,
   total: string
 ) {
@@ -328,24 +329,21 @@ async function sendWhatsAppInvoiceTemplate(
             "body",
 
           parameters: [
+  {
+    type: "text",
+    text: customerName,
+  },
 
-            {
-              type:
-                "text",
+  {
+    type: "text",
+    text: invoiceNumber,
+  },
 
-              text:
-                invoiceNumber,
-            },
-
-            {
-              type:
-                "text",
-
-              text:
-                total,
-            },
-
-          ],
+  {
+    type: "text",
+    text: total,
+  },
+],
         },
 
       ],
@@ -719,20 +717,15 @@ export async function POST(
     // Send Template
     // =================================================
 
-    const whatsappResult =
-      await sendWhatsAppInvoiceTemplate(
-
-        whatsappPhone,
-
-        mediaId,
-
-        filename,
-
-        invoiceNumber,
-
-        invoiceTotal
-
-      );
+ const whatsappResult =
+  await sendWhatsAppInvoiceTemplate(
+    whatsappPhone,
+    mediaId,
+    filename,
+    String(invoice.customer.name),
+    invoiceNumber,
+    invoiceTotal
+  );
 
     // =================================================
     // Success
