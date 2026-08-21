@@ -237,8 +237,8 @@ export default function DashboardPage() {
         </Card>
 
         {/* Navigation */}
-        <Card className="mb-6  bg-white  ">
-          <CardContent className="p-2 bg-sky-300/20 rounded-xl">
+        <Card className="mb-6   ">
+          <CardContent className="p-2 bg-sky-300/50  shadow-sm  rounded-xl ">
             <nav
               className="flex gap-2 overflow-x-auto rounded-xl"
               aria-label="التنقل الرئيسي"

@@ -10,6 +10,7 @@ import {
   Package,
   ShoppingCart,
   TrendingUp,
+  SlidersVertical,
   Users,
   Warehouse,
 } from 'lucide-react';
@@ -146,7 +147,7 @@ export default function DashboardStats() {
           <div>
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F5E9]">
-                <TrendingUp className="h-5 w-5 text-[#2E7D32]" />
+                <SlidersVertical className="h-5 w-5 text-[#2E7D32]" />
               </div>
 
               <div>
@@ -178,8 +179,9 @@ export default function DashboardStats() {
         {/* Today */}
         <section className="space-y-3">
           <div className="flex items-center gap-2">
+            
             <div className="h-5 w-1 rounded-full bg-[#2E7D32]" />
-
+            <TrendingUp className="h-5 w-5 text-[#2E7D32]" />
             <h2 className="text-lg font-bold text-[#374151]">
               إحصائيات اليوم
             </h2>
@@ -348,7 +350,6 @@ export default function DashboardStats() {
                     </CardDescription>
                   </div>
                 </div>
-                  <ArrowUpLeft className="h-5 w-5 text-[#374151]/30" />
               </div>
             </CardHeader>
 
