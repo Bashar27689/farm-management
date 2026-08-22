@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Farm Management",
+  title: "بيض المراعي",
   description: "Farm Management System",
 };
 
