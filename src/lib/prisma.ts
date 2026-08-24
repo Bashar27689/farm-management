@@ -23,8 +23,8 @@ const adapter = new PrismaMariaDb({
     // Maximum time to establish a new connection
     connectTimeout: 15000,
 
-    // Must be lower than MySQL wait_timeout (20 seconds)
-    idleTimeout: 10,
+    // Must be lower than MySQL wait_timeout (300 seconds)
+    idleTimeout: 300,
 
     ssl: {
         rejectUnauthorized: false,

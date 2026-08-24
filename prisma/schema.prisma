@@ -21,6 +21,12 @@ enum Role {
   USER
 }
 
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
 model Production {
   id        String   @id @default(cuid())
   date      DateTime @default(now())
@@ -31,10 +37,10 @@ model Production {
 model Sales {
   id           String    @id @default(cuid())
   date         DateTime  @default(now())
-  shopName     String
   trayCount    Int
   pricePerTray Int
   total        Int
+  paidAmount   Int       @default(0)
   customerId   String?
   customer     Customer? @relation(fields: [customerId], references: [id])
   createdAt    DateTime  @default(now())
@@ -45,32 +51,33 @@ model Sales {
 model Customer {
   id        String    @id @default(cuid())
   name      String
-  phone     String    @unique
+  phone     String?   @unique
   createdAt DateTime  @default(now())
   sales     Sales[]
   invoices  Invoice[]
 }
-
 model Supply {
-  id         String    @id @default(cuid())
+  id         String   @id @default(cuid())
   type       String
   name       String
   quantity   Int
   price      Int
-  date       DateTime  @default(now())
+  date       DateTime @default(now())
   expiryDate DateTime?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime @default(now())
 }
 
 model Invoice {
-  id         String   @id @default(cuid())
-  number     String   @unique
-  date       DateTime @default(now())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id])
-  items      String
-  total      Int
-  salesId    String?
-  sales      Sales?
-  createdAt  DateTime @default(now())
+  id            String        @id @default(cuid())
+  number        String        @unique
+  date          DateTime      @default(now())
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  items         String        @db.VarChar(255)
+  total         Int
+  paidAmount    Int           @default(0)
+  paymentStatus PaymentStatus @default(UNPAID)
+  salesId       String?
+  sales         Sales?
+  createdAt     DateTime      @default(now())
 }

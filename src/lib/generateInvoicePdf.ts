@@ -95,6 +95,18 @@ function getImageBase64(
 }
 
 // =====================================================
+// Format Money
+// =====================================================
+
+function formatMoney(
+  amount: number
+): string {
+  return (
+    `ل.س  ${amount.toLocaleString("en-US")} `
+  );
+}
+
+// =====================================================
 // Generate Invoice PDF
 // =====================================================
 
@@ -116,14 +128,15 @@ export async function generateInvoicePdf(
   let items: any = {};
 
   try {
+
     items =
       typeof invoice.items === "string"
         ? JSON.parse(invoice.items)
         : invoice.items;
 
   } catch {
+
     items = {
-      shopName: "بيض",
       trayCount: 0,
       pricePerTray: 0,
     };
@@ -133,15 +146,15 @@ export async function generateInvoicePdf(
     !items ||
     typeof items !== "object"
   ) {
+
     items = {
-      shopName: "بيض",
       trayCount: 0,
       pricePerTray: 0,
     };
   }
 
   // ===================================================
-  // Calculate Total
+  // Sale Data
   // ===================================================
 
   const trayCount =
@@ -154,9 +167,81 @@ export async function generateInvoicePdf(
       items.pricePerTray || 0
     );
 
-  const total =
-    trayCount *
-    pricePerTray;
+  // ===================================================
+  // Invoice Total
+  // ===================================================
+
+  const invoiceTotal =
+    Number(
+      invoice.total ??
+      trayCount * pricePerTray
+    );
+
+  // ===================================================
+  // Paid Amount
+  // ===================================================
+
+  const paidAmount =
+    Math.max(
+      0,
+      Number(
+        invoice.sales?.paidAmount ??
+        invoice.paidAmount ??
+        0
+      )
+    );
+
+  // ===================================================
+  // Remaining Amount
+  // ===================================================
+
+  const remainingAmount =
+    Math.max(
+      0,
+      invoiceTotal -
+      paidAmount
+    );
+
+  // ===================================================
+  // Payment Status
+  // ===================================================
+
+  let paymentStatusText =
+"مدفوعة "+"غير ";
+
+  let paymentStatusColor =
+    "#C62828";
+
+  if (
+    invoiceTotal > 0 &&
+    paidAmount >= invoiceTotal
+  ) {
+
+    paymentStatusText =
+      "مدفوعة بالكامل";
+
+    paymentStatusColor =
+      "#2E7D32";
+
+  } else if (
+    paidAmount > 0 &&
+    paidAmount < invoiceTotal
+  ) {
+
+    paymentStatusText =
+"جزئياً "+"مدفوعة ";
+
+    paymentStatusColor =
+      "#EF6C00";
+
+  } else {
+
+    paymentStatusText =
+"مدفوعة "+"غير ";
+
+    paymentStatusColor =
+      "#C62828";
+  }
 
   // ===================================================
   // Assets
@@ -175,30 +260,32 @@ export async function generateInvoicePdf(
   // ===================================================
   // Invoice Date
   // ===================================================
-const invoiceDate =
-  new Date(
-    invoice.date
-  );
 
-const day =
-  invoiceDate
-    .getDate()
-    .toString();
+  const invoiceDate =
+    new Date(
+      invoice.date
+    );
 
-const month =
-  (
-    invoiceDate.getMonth() + 1
-  )
-    .toString();
+  const day =
+    invoiceDate
+      .getDate()
+      .toString()
+      .padStart(2, "0");
 
-const year =
-  invoiceDate
-    .getFullYear()
-    .toString();
+  const month =
+    (
+      invoiceDate.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0");
 
-const date =
-  `${day}-${month}-${year}`;
-// =====================================================
+  const year =
+    invoiceDate
+      .getFullYear()
+      .toString();
+
+  const date =
+    `${day}-${month}-${year}`;
 
   // ===================================================
   // Colors
@@ -207,11 +294,14 @@ const date =
   const GREEN =
     "#1B5E20";
 
+  const LIGHT_GREEN =
+    "#E8F5E9";
+
   const LIGHT_GRAY =
-    "#f5f5f5";
+    "#F5F5F5";
 
   const BORDER =
-    "#dddddd";
+    "#D6D6D6";
 
   const TEXT =
     "#333333";
@@ -221,6 +311,7 @@ const date =
   // ===================================================
 
   const header: Content = {
+
     columns: [
 
       // -----------------------------------------------
@@ -229,25 +320,28 @@ const date =
 
       logo
         ? {
+
             image:
               logo,
 
             width:
-              100,
+              95,
 
             height:
-              100,
+              95,
 
             fit: [
-              100,
-              100,
+              95,
+              95,
             ],
 
             alignment:
               "left",
           }
         : {
-            text: "",
+
+            text:
+              "",
           },
 
       // -----------------------------------------------
@@ -255,8 +349,9 @@ const date =
       // -----------------------------------------------
 
       {
+
         text:
-          " مبيعات "+"فاتورة ",
+"مبيعات "+"فاتورة ",
 
         fontSize:
           28,
@@ -295,8 +390,11 @@ const date =
   // ===================================================
 
   const headerLine: Content = {
+
     canvas: [
+
       {
+
         type:
           "line",
 
@@ -329,59 +427,120 @@ const date =
   };
 
   // ===================================================
-  // Invoice Info
+  // Invoice Information
   // ===================================================
 
   const invoiceInfo: Content = {
-    columns: [
 
-{
-        text: [
-       {
-          text:
-            date,
-        },
-        {
-          text:
-            "التاريخ: ",
-        },
+    table: {
 
-       
+      widths: [
+        "*",
+        "*",
       ],
 
-      alignment:
-        "right",
-    },
+      body: [
 
-      {
-        text: [
+        [
 
-          String(
-            invoice.number ?? ""
-          ),
+          // -------------------------------------------
+          // Date
+          // -------------------------------------------
 
           {
-            text:
-              "الفاتورة: "+"رقم",
+
+            text: [
+              date,
+              {
+
+                text:
+                  "التاريخ: ",
+
+                bold:
+                  true,
+              },
+
+             
+            ],
+
+            alignment:
+              "right",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
           },
 
-        ],
+          // -------------------------------------------
+          // Invoice Number
+          // -------------------------------------------
 
-        alignment:
-          "right",
-      },
-    ],
+          {
+
+            text: [
+   String(
+                invoice.number ?? ""
+              ),
+              {
+
+                text:
+                 "الفاتورة: "+"رقم ",
+
+                bold:
+                  true,
+              },
+
+           
+            ],
+
+            alignment:
+              "right",
+
+            margin: [
+              5,
+              8,
+              5,
+              8,
+            ],
+          },
+        ],
+      ],
+    },
+
+    layout: {
+
+      hLineWidth:
+        () => 0,
+
+      vLineWidth:
+        () => 0,
+
+      paddingLeft:
+        () => 0,
+
+      paddingRight:
+        () => 0,
+
+      paddingTop:
+        () => 0,
+
+      paddingBottom:
+        () => 0,
+    },
 
     margin: [
       0,
-      20,
+      15,
       0,
       0,
     ],
   };
 
   // ===================================================
-  // Section Title Helper
+  // Section Title
   // ===================================================
 
   function sectionTitle(
@@ -389,10 +548,11 @@ const date =
   ): Content {
 
     return {
+
       text,
 
       fontSize:
-        20,
+        18,
 
       bold:
         true,
@@ -405,7 +565,7 @@ const date =
 
       margin: [
         0,
-        25,
+        20,
         0,
         10,
       ],
@@ -413,78 +573,96 @@ const date =
   }
 
   // ===================================================
-  // Customer
+  // Customer Information
   // ===================================================
 
   const customer: Content = {
+
     table: {
 
       widths: [
+        "*",
         "*",
       ],
 
       body: [
 
         [
+
+
+          // -------------------------------------------
+          // Customer Phone
+          // -------------------------------------------
+
           {
-            stack: [
 
+            text: [
+              String(
+                invoice.customer
+                  ?.phone ?? ""
+              ),
               {
-                text: [
 
-                  String(
-                    invoice.customer
-                      ?.name ?? ""
-                  ),
+                text:
+"الهاتف: "+"رقم ",
 
-                  {
-                    text:
-                      "الاسم: ",
-                  },
-
-                ],
-
-                alignment:
-                  "right",
-
-                margin: [
-                  0,
-                  0,
-                  0,
-                  5,
-                ],
+                bold:
+                  true,
               },
 
-              {
-                text: [
 
-                  String(
-                    invoice.customer
-                      ?.phone ?? ""
-                  ),
-
-                  {
-                    text:
-                      "الهاتف: ",
-                  },
-
-                ],
-
-                alignment:
-                  "right",
-              },
             ],
+
+            alignment:
+              "right",
 
             fillColor:
               LIGHT_GRAY,
 
             margin: [
-              15,
-              15,
-              15,
-              15,
+              10,
+              12,
+              10,
+              12,
             ],
           },
+                    // -------------------------------------------
+          // Customer Name
+          // -------------------------------------------
+
+          {
+
+            text: [
+              String(
+                invoice.customer
+                  ?.name ?? ""
+              ),
+              {
+
+                text:
+"العميل: "+"أسم ",
+
+                bold:
+                  true,
+              },
+
+
+            ],
+
+            alignment:
+              "right",
+
+            fillColor:
+              LIGHT_GRAY,
+
+            margin: [
+              10,
+              12,
+              10,
+              12,
+            ],
+          },
+
         ],
       ],
     },
@@ -523,12 +701,18 @@ const date =
   // ===================================================
 
   const invoiceTable: Content = {
+
     table: {
 
       headerRows:
         1,
 
+      // سبعة أعمدة
       widths: [
+
+        "*",
+        "*",
+        "*",
         "*",
         "*",
         "*",
@@ -536,16 +720,20 @@ const date =
       ],
 
       body: [
-
+       
         // =============================================
-        // Header
+        // Table Header
         // =============================================
 
         [
+          // -------------------------------------------
+          // Payment Status
+          // -------------------------------------------
 
           {
+
             text:
-              "المجموع",
+             "الدفع "+"حالة ",
 
             bold:
               true,
@@ -560,14 +748,107 @@ const date =
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              9,
+              3,
+              9,
+            ],
+          },
+                    // -------------------------------------------
+          // Remaining Amount
+          // -------------------------------------------
+
+          {
+
+            text:
+             "المتبقي "+"المبلغ ",
+
+            bold:
+              true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              3,
+              9,
+              3,
+              9,
+            ],
+          },
+          
+
+          // -------------------------------------------
+          // Paid Amount
+          // -------------------------------------------
+
+          {
+
+            text:
+             "المستلم "+"المبلغ ",
+
+            bold:
+              true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              3,
+              9,
+              3,
+              9,
             ],
           },
 
+
+          // -------------------------------------------
+          // Invoice Total
+          // -------------------------------------------
+
           {
+
+            text:
+             "الفاتورة "+"إجمالي ",
+
+            bold:
+              true,
+
+            color:
+              "#FFFFFF",
+
+            fillColor:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              3,
+              9,
+              3,
+              9,
+            ],
+          },
+          
+          // -------------------------------------------
+          // Price
+          // -------------------------------------------
+
+          {
+
             text:
               "السعر",
 
@@ -584,14 +865,19 @@ const date =
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              9,
+              3,
+              9,
             ],
           },
 
+          // -------------------------------------------
+          // Quantity
+          // -------------------------------------------
+
           {
+
             text:
               "الكمية",
 
@@ -608,16 +894,21 @@ const date =
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              9,
+              3,
+              9,
             ],
           },
 
+          // -------------------------------------------
+          // Item
+          // -------------------------------------------
+
           {
+
             text:
-              " الدكان "+" اسم",
+              "المنتج",
 
             bold:
               true,
@@ -632,88 +923,201 @@ const date =
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              9,
+              3,
+              9,
             ],
           },
+
+
+
         ],
 
         // =============================================
-        // Data
+        // Table Data
         // =============================================
 
         [
+          // -------------------------------------------
+          // Payment Status
+          // -------------------------------------------
 
           {
+
             text:
-              String(
-                total
+              paymentStatusText,
+
+            bold:
+              true,
+
+            color:
+              paymentStatusColor,
+
+            alignment:
+              "center",
+
+            fillColor:
+              remainingAmount === 0
+                ? LIGHT_GREEN
+                : "#FFF3E0",
+
+            margin: [
+              3,
+              12,
+              3,
+              12,
+            ],
+          },
+          // -------------------------------------------
+          // Remaining Amount
+          // -------------------------------------------
+
+          {
+
+            text:
+              formatMoney(
+                remainingAmount
               ),
+
+            bold:
+              true,
+
+            color:
+              remainingAmount === 0
+                ? GREEN
+                : "#EF6C00",
 
             alignment:
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              12,
+              3,
+              12,
             ],
           },
 
+          // -------------------------------------------
+          // Paid Amount
+          // -------------------------------------------
+
           {
+
             text:
-              String(
-                items.pricePerTray ??
-                0
+              formatMoney(
+                paidAmount
               ),
+
+            bold:
+              true,
+
+            color:
+              GREEN,
 
             alignment:
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              12,
+              3,
+              12,
             ],
           },
 
+
+
+
+          // -------------------------------------------
+          // Invoice Total
+          // -------------------------------------------
+
           {
+
             text:
-              String(
-                items.trayCount ??
-                0
+              formatMoney(
+                invoiceTotal
+              ),
+
+            bold:
+              true,
+
+            color:
+              GREEN,
+
+            alignment:
+              "center",
+
+            margin: [
+              3,
+              12,
+              3,
+              12,
+            ],
+          },
+          // -------------------------------------------
+          // Price
+          // -------------------------------------------
+
+          {
+
+            text:
+              formatMoney(
+                pricePerTray
               ),
 
             alignment:
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              12,
+              3,
+              12,
             ],
           },
 
+          // -------------------------------------------
+          // Quantity
+          // -------------------------------------------
+
           {
+
             text:
               String(
-                items.shopName ??
-                "بيض"
+                trayCount
               ),
 
             alignment:
               "center",
 
             margin: [
-              5,
-              10,
-              5,
-              10,
+              3,
+              12,
+              3,
+              12,
+            ],
+          },
+
+          // -------------------------------------------
+          // Item
+          // -------------------------------------------
+
+          {
+
+            text:
+              "بيض",
+
+            alignment:
+              "center",
+
+            margin: [
+              3,
+              12,
+              3,
+              12,
             ],
           },
         ],
@@ -722,12 +1126,13 @@ const date =
 
     layout: {
 
-      // Horizontal lines
+      // -----------------------------------------------
+      // Horizontal Lines
+      // -----------------------------------------------
 
       hLineWidth:
         (
-          i: number,
-          node: any
+          i: number
         ) => {
 
           if (
@@ -743,12 +1148,20 @@ const date =
         () =>
           BORDER,
 
-      // No vertical borders
+      // -----------------------------------------------
+      // Vertical Lines
+      // -----------------------------------------------
 
       vLineWidth:
-        () => 0,
+        () => 1,
 
-      // Remove default cell padding
+      vLineColor:
+        () =>
+          BORDER,
+
+      // -----------------------------------------------
+      // Padding
+      // -----------------------------------------------
 
       paddingLeft:
         () => 0,
@@ -772,45 +1185,6 @@ const date =
   };
 
   // ===================================================
-  // Total
-  // ===================================================
-
-  const totalSection: Content = {
-
-    text: [
-
-      " ل.س",
-
-      String(
-        invoice.total ??
-        total
-      ),
-
-      " الكلي: "+"المجموع",
-
-    ],
-
-    fontSize:
-      22,
-
-    bold:
-      true,
-
-    color:
-      GREEN,
-
-    alignment:
-      "left",
-
-    margin: [
-      0,
-      30,
-      0,
-      0,
-    ],
-  };
-
-  // ===================================================
   // Document Definition
   // ===================================================
 
@@ -824,18 +1198,19 @@ const date =
       "portrait",
 
     pageMargins: [
-      35,
       30,
-      35,
-      250,
+      30,
+      30,
+      300,
     ],
 
     defaultStyle: {
+
       font:
         "Cairo",
 
       fontSize:
-        12,
+        11,
 
       color:
         TEXT,
@@ -857,47 +1232,46 @@ const date =
       invoiceInfo,
 
       sectionTitle(
-        " العميل "+" بيانات"
+"العميل "+"بيانات "
       ),
 
       customer,
 
       sectionTitle(
-        "الفاتورة "+ "تفاصيل "
+"الفاتورة "+"تفاصيل "
       ),
 
       invoiceTable,
-
-      totalSection,
     ],
 
     // =================================================
     // Signature Footer
     // =================================================
 
-    footer: signature
-      ? {
-          image:
-            signature,
+    footer:
+      signature
+        ? {
 
-          width:
-            600,
+            image:
+              signature,
 
-          height:
-            250,
+            width:
+              600,
 
+            height:
+              300,
 
-          alignment:
-            "center",
+            alignment:
+              "center",
 
-          margin: [
-            0,
-            0,
-            0,
-            0,
-          ],
-        }
-      : undefined,
+            margin: [
+              0,
+              0,
+              0,
+              0,
+            ],
+          }
+        : undefined,
   };
 
   // ===================================================

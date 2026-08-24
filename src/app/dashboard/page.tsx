@@ -22,6 +22,9 @@ import SupplyForm from '../../components/SupplyForm';
 import UsersManagement from '../../components/UsersManagement';
 import DashboardStats from '../../components/DashboardStats';
 import InvoiceList from '#components/InvoiceList';
+import CustomersPage from '../customers/page';
+import SuppliesPage from '../supplies/page';
+
 
 import farmLogo from '../../../public/assets/farm-Logo.png';
 
@@ -41,6 +44,8 @@ type TabId =
   | 'supplies'
   | 'users'
   | 'invoiceslist'
+  | 'Customers Management'
+  | 'Supplies Management'
 
 type User = {
   id?: string;
@@ -137,6 +142,16 @@ export default function DashboardPage() {
       id: 'invoiceslist' as TabId,
       label: 'الفواتير',
       icon: Receipt ,
+    },
+    {
+      id: 'Customers Management' as TabId,
+      label: 'إدارة العملاء',
+      icon: Receipt ,
+    },
+  {
+      id: 'Supplies Management' as TabId,
+      label: 'إدارة المستلزمات',
+      icon: Package ,
     }
   ];
 
@@ -290,6 +305,13 @@ export default function DashboardPage() {
            {activeTab === 'invoiceslist' && (
             <InvoiceList />
           )}
+          {activeTab === 'Customers Management' && (
+            <CustomersPage />
+          )}
+           {activeTab === 'Supplies Management' && (
+            <SuppliesPage />
+          )}
+
 
           {activeTab === 'users' &&
             user?.role === 'ADMIN' && (
