@@ -31,8 +31,7 @@ export async function POST(
     // Authentication
     // =================================================
 
-    const user =
-      getCurrentUser(request);
+    const user = getCurrentUser(request);
 
     if (!user) {
       return NextResponse.json(
@@ -50,9 +49,12 @@ export async function POST(
     // Request Body
     // =================================================
 
-    const {
-      invoiceId,
-    } = await request.json();
+    const body = await request.json();
+
+    const invoiceId =
+      typeof body?.invoiceId === "string"
+        ? body.invoiceId.trim()
+        : "";
 
     if (!invoiceId) {
       return NextResponse.json(
@@ -72,7 +74,7 @@ export async function POST(
     );
 
     // =================================================
-    // Get Invoice
+    // Get Latest Invoice Data
     // =================================================
 
     const invoice =
@@ -83,9 +85,20 @@ export async function POST(
 
         include: {
           customer: true,
+
           sales: true,
+
+          payments: {
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
         },
       });
+
+    // =================================================
+    // Invoice Not Found
+    // =================================================
 
     if (!invoice) {
       return NextResponse.json(
@@ -99,12 +112,75 @@ export async function POST(
       );
     }
 
+    // =================================================
+    // Calculate Payment Information
+    // =================================================
+
+    const paymentsTotal =
+      invoice.payments.reduce(
+        (
+          total: number,
+          payment
+        ) => {
+          return (
+            total +
+            Number(payment.amount ?? 0)
+          );
+        },
+        0
+      );
+
+    const invoiceTotal =
+      Number(invoice.total ?? 0);
+
+    const invoicePaidAmount =
+      Number(invoice.paidAmount ?? 0);
+
+    const remainingAmount =
+      Math.max(
+        invoiceTotal -
+          invoicePaidAmount,
+        0
+      );
+
+    // =================================================
+    // Logs
+    // =================================================
+
     console.log(
-      "PDF Route: invoice loaded"
+      "PDF Route: invoice total:",
+      invoiceTotal
+    );
+
+    console.log(
+      "PDF Route: invoice.paidAmount:",
+      invoicePaidAmount
+    );
+
+    console.log(
+      "PDF Route: payments count:",
+      invoice.payments.length
+    );
+
+    console.log(
+      "PDF Route: payments total:",
+      paymentsTotal
+    );
+
+    console.log(
+      "PDF Route: remaining amount:",
+      remainingAmount
     );
 
     // =================================================
     // Generate PDF
+    // =================================================
+    //
+    // مهم:
+    // generateInvoicePdf حالياً يستقبل InvoicePdfInput
+    // ولا يحتوي هذا النوع على paymentsTotal.
+    //
+    // لذلك نرسل invoice فقط.
     // =================================================
 
     const pdf =
@@ -119,12 +195,9 @@ export async function POST(
 
     // =================================================
     // Buffer → Uint8Array
-    //
-    // مهم:
-    // NextResponse لا نقوم بتمرير Buffer مباشرة.
     // =================================================
 
-    const body =
+    const bodyBuffer =
       new Uint8Array(pdf);
 
     // =================================================
@@ -132,7 +205,7 @@ export async function POST(
     // =================================================
 
     return new NextResponse(
-      body,
+      bodyBuffer,
       {
         status: 200,
 
@@ -144,7 +217,9 @@ export async function POST(
             `attachment; filename="invoice-${invoice.number}.pdf"`,
 
           "Content-Length":
-            String(body.byteLength),
+            String(
+              bodyBuffer.byteLength
+            ),
 
           "Cache-Control":
             "no-store",

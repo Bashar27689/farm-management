@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           message:
-            'سعر الطبق يجب أن يكون رقمًا صحيحًا أكبر من صفر',
+            'سعر الطبق يجب أن يكون رقماً صحيحاً أكبر من صفر',
         },
         { status: 400 }
       );

@@ -102,7 +102,7 @@ export default function CustomersPage() {
     setSelectedCustomer(customer);
 
     setName(customer.name);
-    setPhone(customer.phone);
+    setPhone(customer.phone || '');
 
     setMessage('');
     setError('');

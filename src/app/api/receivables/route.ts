@@ -1,10 +1,15 @@
 // src/app/api/receivables/route.ts
 
-import { NextRequest, NextResponse } from 'next/server';
+import {
+  NextRequest,
+  NextResponse,
+} from 'next/server';
 
 import { prisma } from '../../../lib/prisma';
 
-import { getCurrentUser } from '../../../lib/auth';
+import {
+  getCurrentUser,
+} from '../../../lib/auth';
 
 
 // =====================================================
@@ -14,7 +19,8 @@ import { getCurrentUser } from '../../../lib/auth';
 export async function GET(
   request: NextRequest
 ) {
-  const user = getCurrentUser(request);
+  const user =
+    getCurrentUser(request);
 
   if (!user) {
     return NextResponse.json(
@@ -30,10 +36,12 @@ export async function GET(
   try {
 
     // ===================================================
-    // جلب الفواتير التي عليها مبلغ متبقٍ
+    // 1. جلب الفواتير غير المكتملة فقط
+    //
+    // لا نجلب الفواتير PAID هنا نهائياً.
     // ===================================================
 
-    const invoices =
+    const outstandingInvoices =
       await prisma.invoice.findMany({
         where: {
           paymentStatus: {
@@ -41,6 +49,12 @@ export async function GET(
               'UNPAID',
               'PARTIAL',
             ],
+          },
+
+          // تأكيد إضافي:
+          // يجب أن يكون هناك مبلغ متبقٍ
+          paidAmount: {
+            lt: prisma.invoice.fields.total,
           },
         },
 
@@ -61,17 +75,27 @@ export async function GET(
 
 
     // ===================================================
-    // إزالة الفواتير التي لا يوجد عليها مبلغ متبقٍ
+    // 2. تنظيف البيانات
+    //
+    // أي فاتورة لا يوجد عليها مبلغ متبقٍ لن تظهر.
     // ===================================================
 
-    const outstandingInvoices =
-      invoices
+    const invoices =
+      outstandingInvoices
         .map((invoice) => {
+
+          const total =
+            Number(invoice.total);
+
+          const paidAmount =
+            Number(
+              invoice.paidAmount ?? 0
+            );
 
           const remainingAmount =
             Math.max(
-              invoice.total -
-                invoice.paidAmount,
+              total -
+                paidAmount,
               0
             );
 
@@ -82,10 +106,9 @@ export async function GET(
 
             date: invoice.date,
 
-            total: invoice.total,
+            total,
 
-            paidAmount:
-              invoice.paidAmount,
+            paidAmount,
 
             remainingAmount,
 
@@ -103,7 +126,24 @@ export async function GET(
 
 
     // ===================================================
-    // تجميع الفواتير حسب العميل
+    // 3. حساب عدد الفواتير المكتملة فقط
+    //
+    // PAID لا تدخل في customers
+    // ولا تدخل في invoices
+    //
+    // نحتاج عددها فقط.
+    // ===================================================
+
+    const completedInvoicesCount =
+      await prisma.invoice.count({
+        where: {
+          paymentStatus: 'PAID',
+        },
+      });
+
+
+    // ===================================================
+    // 4. تجميع الفواتير غير المكتملة حسب العميل
     // ===================================================
 
     const customersMap =
@@ -117,22 +157,24 @@ export async function GET(
           total: number;
           paidAmount: number;
           remainingAmount: number;
-          invoices: typeof outstandingInvoices;
+          invoices: typeof invoices;
         }
       >();
 
 
     for (
-      const invoice of outstandingInvoices
+      const invoice of invoices
     ) {
 
       const customerId =
         invoice.customer.id;
 
+
       const existing =
         customersMap.get(
           customerId
         );
+
 
       if (existing) {
 
@@ -186,7 +228,7 @@ export async function GET(
 
 
     // ===================================================
-    // تحويل Map إلى Array
+    // 5. تحويل Map إلى Array
     // ===================================================
 
     const customers =
@@ -200,11 +242,11 @@ export async function GET(
 
 
     // ===================================================
-    // الإحصائيات العامة
+    // 6. إجمالي المستحقات
     // ===================================================
 
     const totalOutstanding =
-      outstandingInvoices.reduce(
+      invoices.reduce(
         (
           sum,
           invoice
@@ -215,16 +257,28 @@ export async function GET(
       );
 
 
-    const totalInvoices =
-      outstandingInvoices.length;
+    // ===================================================
+    // 7. عدد الفواتير غير المكتملة
+    // ===================================================
 
+    const totalInvoices =
+      invoices.length;
+
+
+    // ===================================================
+    // 8. عدد العملاء المدينين
+    // ===================================================
 
     const totalCustomers =
       customers.length;
 
 
+    // ===================================================
+    // 9. إجمالي قيمة الفواتير غير المكتملة
+    // ===================================================
+
     const totalInvoiceValue =
-      outstandingInvoices.reduce(
+      invoices.reduce(
         (
           sum,
           invoice
@@ -235,8 +289,12 @@ export async function GET(
       );
 
 
+    // ===================================================
+    // 10. إجمالي المدفوع من الفواتير غير المكتملة
+    // ===================================================
+
     const totalPaidAmount =
-      outstandingInvoices.reduce(
+      invoices.reduce(
         (
           sum,
           invoice
@@ -248,29 +306,38 @@ export async function GET(
 
 
     // ===================================================
-    // Response
+    // 11. Response
     // ===================================================
 
     return NextResponse.json({
 
       summary: {
 
+        // إجمالي المبالغ المتبقية
         totalOutstanding,
 
+        // عدد العملاء الذين عليهم مبالغ
         totalCustomers,
 
+        // عدد الفواتير غير المكتملة
         totalInvoices,
 
+        // إجمالي قيمة الفواتير غير المكتملة
         totalInvoiceValue,
 
+        // إجمالي المدفوع من الفواتير غير المكتملة
         totalPaidAmount,
+
+        // عدد الفواتير المكتملة
+        completedInvoicesCount,
 
       },
 
+      // العملاء المدينون فقط
       customers,
 
-      invoices:
-        outstandingInvoices,
+      // الفواتير غير المكتملة فقط
+      invoices,
 
     });
 

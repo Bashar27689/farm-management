@@ -1,13 +1,13 @@
-// src/components/InvoiceList.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+
 import {
   Download,
   FileText,
+  Loader2,
   Search,
   Send,
-  Loader2,
 } from 'lucide-react';
 
 import {
@@ -23,86 +23,172 @@ import { Badge } from '../../@/components/ui/badge';
 import { Input } from '../../@/components/ui/input';
 import { Label } from '../../@/components/ui/label';
 
-type Customer = {
-  id: string;
-  name: string;
-  phone?: string | null;
+import type {
+  Invoice,
+  PaymentStatus,
+} from './InvoiceManagement';
+
+
+// =====================================================
+// Props
+// =====================================================
+
+type InvoiceListProps = {
+  invoices: Invoice[];
+  onRefresh: () => Promise<void>;
 };
 
-type Invoice = {
-  id: string;
-  number: string;
-  total: number;
-  customer?: Customer | null;
-};
 
-export default function InvoiceList() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
+// =====================================================
+// Component
+// =====================================================
 
-  // البحث عن العميل
-  const [searchTerm, setSearchTerm] = useState('');
+export default function InvoiceList({
+  invoices,
+  onRefresh,
+}: InvoiceListProps) {
 
-  // الفاتورة التي يتم إرسالها عبر WhatsApp
-  const [sendingInvoiceId, setSendingInvoiceId] =
-    useState<string | null>(null);
+  const [searchTerm, setSearchTerm] =
+    useState('');
 
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
+  const [
+    sendingInvoiceId,
+    setSendingInvoiceId,
+  ] = useState<string | null>(null);
 
-  const fetchInvoices = async () => {
-    try {
-      const res = await fetch('/api/invoices');
+  const [
+    downloadingInvoiceId,
+    setDownloadingInvoiceId,
+  ] = useState<string | null>(null);
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch invoices');
-      }
 
-      const data = await res.json();
+  // ===================================================
+  // Payment status
+  // ===================================================
 
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid invoices response');
-      }
+  const getPaymentStatus = (
+    status: PaymentStatus
+  ) => {
 
-      setInvoices(data);
-    } catch (error) {
-      console.error('Error fetching invoices:', error);
-      setInvoices([]);
-    } finally {
-      setLoading(false);
+    switch (status) {
+
+      case 'PAID':
+        return {
+          text: 'مدفوعة بالكامل',
+          className:
+            'border-[#2E7D32]/20 bg-[#E8F5E9] text-[#2E7D32]',
+        };
+
+      case 'PARTIAL':
+        return {
+          text: 'مدفوعة جزئياً',
+          className:
+            'border-[#EF6C00]/20 bg-[#FFF3E0] text-[#EF6C00]',
+        };
+
+      case 'UNPAID':
+      default:
+        return {
+          text: 'غير مدفوعة',
+          className:
+            'border-[#C62828]/20 bg-[#FFEBEE] text-[#C62828]',
+        };
     }
   };
 
-  // =====================================================
-  // تنزيل PDF
-  // =====================================================
 
-  const downloadPDF = async (
-    invoiceId: string,
-    number: string
-  ) => {
-    try {
-      const res = await fetch('/api/invoice-pdf', {
-        method: 'POST',
+  // ===================================================
+  // Filter
+  // ===================================================
 
-        headers: {
-          'Content-Type': 'application/json',
-        },
+  const filteredInvoices =
+    useMemo(() => {
 
-        body: JSON.stringify({
-          invoiceId,
-        }),
-      });
+      const value =
+        searchTerm
+          .trim()
+          .toLowerCase();
 
-      if (!res.ok) {
-        throw new Error('Failed to generate PDF');
+      if (!value) {
+        return invoices;
       }
 
-      const blob = await res.blob();
+      return invoices.filter(
+        (invoice) => {
+
+          const customerName =
+            invoice.customer?.name || '';
+
+          const phone =
+            invoice.customer?.phone || '';
+
+          return (
+            invoice.number
+              .toLowerCase()
+              .includes(value) ||
+
+            customerName
+              .toLowerCase()
+              .includes(value) ||
+
+            phone
+              .toLowerCase()
+              .includes(value)
+          );
+        }
+      );
+
+    }, [
+      invoices,
+      searchTerm,
+    ]);
+
+
+  // ===================================================
+  // Download PDF
+  // ===================================================
+
+  const downloadPDF = async (
+    invoice: Invoice
+  ) => {
+
+    try {
+
+      setDownloadingInvoiceId(
+        invoice.id
+      );
+
+      const response =
+        await fetch(
+          '/api/invoice-pdf',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body: JSON.stringify({
+              invoiceId:
+                invoice.id,
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          'Failed to generate PDF'
+        );
+      }
+
+      const blob =
+        await response.blob();
 
       const url =
-        window.URL.createObjectURL(blob);
+        window.URL.createObjectURL(
+          blob
+        );
 
       const link =
         document.createElement('a');
@@ -110,17 +196,24 @@ export default function InvoiceList() {
       link.href = url;
 
       link.download =
-        `invoice-${number}.pdf`;
+        `invoice-${invoice.number}.pdf`;
 
-      document.body.appendChild(link);
+      document.body.appendChild(
+        link
+      );
 
       link.click();
 
-      document.body.removeChild(link);
+      document.body.removeChild(
+        link
+      );
 
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(
+        url
+      );
 
     } catch (error) {
+
       console.error(
         'Error downloading PDF:',
         error
@@ -129,134 +222,174 @@ export default function InvoiceList() {
       alert(
         'حدث خطأ في تحميل الفاتورة'
       );
+
+    } finally {
+
+      setDownloadingInvoiceId(
+        null
+      );
     }
   };
 
 
-  // =====================================================
-  // إرسال الفاتورة عبر WhatsApp
-  // =====================================================
+  // ===================================================
+  // Send WhatsApp
+  // ===================================================
 
-const sendInvoiceWhatsApp = async (
-  invoice: Invoice
-) => {
-  if (!invoice.customer?.phone) {
-    alert('لا يوجد رقم هاتف لهذا العميل');
-    return;
-  }
+  const sendInvoiceWhatsApp =
+    async (
+      invoice: Invoice
+    ) => {
 
-  if (sendingInvoiceId) {
-    return;
-  }
+      if (
+        !invoice.customer?.phone
+      ) {
 
-  try {
-    setSendingInvoiceId(invoice.id);
+        alert(
+          'لا يوجد رقم هاتف لهذا العميل'
+        );
 
-    const res = await fetch(
-      '/api/whatsapp/send-invoice',
-      {
-        method: 'POST',
-
-        headers: {
-          'Content-Type': 'application/json',
-        },
-
-        body: JSON.stringify({
-          invoiceId: invoice.id,
-        }),
+        return;
       }
-    );
 
-    // نقرأ الاستجابة كنص أولًا
-    const responseText = await res.text();
+      if (sendingInvoiceId) {
+        return;
+      }
 
-    console.log(
-      'WhatsApp HTTP status:',
-      res.status
-    );
+      try {
 
-    console.log(
-      'WhatsApp response:',
-      responseText
-    );
+        setSendingInvoiceId(
+          invoice.id
+        );
 
-    // محاولة تحويلها إلى JSON
-    let data: any;
+        const response =
+          await fetch(
+            '/api/whatsapp/send-invoice',
+            {
+              method: 'POST',
 
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      throw new Error(
-        `السيرفر أعاد استجابة غير صالحة JSON. HTTP ${res.status}\n\n${responseText.substring(0, 500)}`
-      );
-    }
+              headers: {
+                'Content-Type':
+                  'application/json',
+              },
 
-    if (!res.ok || !data.success) {
-      throw new Error(
-        data?.message ||
-        data?.error ||
-        'فشل إرسال الفاتورة'
-      );
-    }
-
-    alert(
-      `تم إرسال الفاتورة رقم ${invoice.number} عبر WhatsApp بنجاح`
-    );
-
-  } catch (error) {
-    console.error(
-      'Error sending invoice via WhatsApp:',
-      error
-    );
-
-    alert(
-      error instanceof Error
-        ? error.message
-        : 'حدث خطأ أثناء إرسال الفاتورة عبر WhatsApp'
-    );
-
-  } finally {
-    setSendingInvoiceId(null);
-  }
-};
-
-
-  /**
-   * تصفية الفواتير حسب اسم العميل
-   */
-  const filteredInvoices =
-    invoices.filter(
-      (invoice) => {
-
-        const customerName =
-          invoice.customer?.name ||
-          '';
-
-        return customerName
-          .toLowerCase()
-          .includes(
-            searchTerm
-              .trim()
-              .toLowerCase()
+              body: JSON.stringify({
+                invoiceId:
+                  invoice.id,
+              }),
+            }
           );
+
+        const responseText =
+          await response.text();
+
+        console.log(
+          'WhatsApp HTTP status:',
+          response.status
+        );
+
+        console.log(
+          'WhatsApp response:',
+          responseText
+        );
+
+        let data: any;
+
+        try {
+
+          data =
+            JSON.parse(
+              responseText
+            );
+
+        } catch {
+
+          throw new Error(
+            `السيرفر أعاد استجابة غير صالحة JSON. HTTP ${response.status}\n\n${responseText.substring(0, 500)}`
+          );
+        }
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+
+          throw new Error(
+            data?.message ||
+            data?.error ||
+            'فشل إرسال الفاتورة'
+          );
+        }
+
+        alert(
+          `تم إرسال الفاتورة رقم ${invoice.number} عبر WhatsApp بنجاح`
+        );
+
+      } catch (error) {
+
+        console.error(
+          'Error sending invoice via WhatsApp:',
+          error
+        );
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : 'حدث خطأ أثناء إرسال الفاتورة عبر WhatsApp'
+        );
+
+      } finally {
+
+        setSendingInvoiceId(
+          null
+        );
       }
-    );
+    };
 
 
-  if (loading) {
+  // ===================================================
+  // Empty
+  // ===================================================
+
+  if (invoices.length === 0) {
 
     return (
-      <div className="p-6 text-center text-gray-500">
-        جاري التحميل...
-      </div>
-    );
+      <Card className="border-0 bg-white shadow-sm">
 
+        <CardContent className="p-10">
+
+          <div className="flex flex-col items-center justify-center text-center">
+
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50">
+
+              <FileText className="h-6 w-6 text-gray-400" />
+
+            </div>
+
+            <p className="font-medium text-gray-700">
+              لا توجد فواتير
+            </p>
+
+            <p className="mt-1 text-sm text-gray-500">
+              ستظهر الفواتير هنا بعد تسجيل المبيعات.
+            </p>
+
+          </div>
+
+        </CardContent>
+
+      </Card>
+    );
   }
 
+
+  // ===================================================
+  // Render
+  // ===================================================
 
   return (
 
-    <div className="rounded-2xl bg-white p-6 shadow-md">
+    <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
 
       <Card className="border-gray-100 bg-white shadow-sm">
 
@@ -272,16 +405,14 @@ const sendInvoiceWhatsApp = async (
 
             </div>
 
-
             <div>
 
               <CardTitle className="text-xl font-bold text-[#EF6C00]">
                 قائمة الفواتير
               </CardTitle>
 
-
-              <CardDescription className="mt-1 text-[#374151]/60">
-                عرض الفواتير والبحث عنها وتنزيلها وإرسالها عبر WhatsApp
+              <CardDescription className="mt-1">
+                جميع الفواتير مع إمكانية التنزيل والإرسال عبر WhatsApp
               </CardDescription>
 
             </div>
@@ -293,7 +424,7 @@ const sendInvoiceWhatsApp = async (
 
         <CardContent>
 
-          {/* مربع البحث */}
+          {/* Search */}
 
           <div className="mb-6 rounded-2xl border border-gray-100 bg-[#FDFBF7] p-4">
 
@@ -301,39 +432,33 @@ const sendInvoiceWhatsApp = async (
 
               <Search className="h-5 w-5 text-[#2E7D32]" />
 
-
               <Label
                 htmlFor="invoiceSearch"
                 className="font-semibold text-[#374151]"
               >
-                البحث عن عميل
+                البحث عن فاتورة
               </Label>
 
             </div>
-
 
             <div className="relative">
 
               <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
-
               <Input
                 id="invoiceSearch"
                 type="text"
                 value={searchTerm}
-                onChange={(e) =>
+                onChange={(event) =>
                   setSearchTerm(
-                    e.target.value
+                    event.target.value
                   )
                 }
-                placeholder="اكتب اسم العميل للبحث..."
-                className="h-12 rounded-xl border-gray-200 bg-white pr-10 text-[#374151] placeholder:text-gray-400 focus-visible:border-[#2E7D32] focus-visible:ring-[#2E7D32]/20"
+                placeholder="رقم الفاتورة أو اسم العميل أو الهاتف..."
+                className="h-12 rounded-xl border-gray-200 bg-white pr-10 text-right focus-visible:border-[#2E7D32] focus-visible:ring-[#2E7D32]/20"
               />
 
             </div>
-
-
-            {/* عدد النتائج */}
 
             <p className="mt-2 text-xs text-gray-500">
 
@@ -346,240 +471,209 @@ const sendInvoiceWhatsApp = async (
           </div>
 
 
-          {/* لا توجد فواتير */}
+          {/* No results */}
 
-          {invoices.length === 0 ? (
-
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-[#FDFBF7] py-10 text-center">
-
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-
-                <FileText className="h-6 w-6 text-gray-400" />
-
-              </div>
-
-
-              <p className="font-medium text-[#374151]">
-                لا توجد فواتير
-              </p>
-
-
-              <p className="mt-1 text-sm text-gray-500">
-                ستظهر الفواتير هنا بعد تسجيل المبيعات.
-              </p>
-
-            </div>
-
-          ) : filteredInvoices.length === 0 ? (
-
-            /* لا توجد نتائج بحث */
+          {filteredInvoices.length === 0 ? (
 
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-[#FDFBF7] py-10 text-center">
 
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white">
+              <Search className="mb-3 h-7 w-7 text-gray-400" />
 
-                <Search className="h-6 w-6 text-gray-400" />
-
-              </div>
-
-
-              <p className="font-medium text-[#374151]">
+              <p className="font-medium text-gray-700">
                 لا توجد نتائج
               </p>
 
-
               <p className="mt-1 text-sm text-gray-500">
-                لم يتم العثور على فواتير للعميل:
-              </p>
-
-
-              <p className="mt-1 font-semibold text-[#2E7D32]">
-                {searchTerm}
+                لم يتم العثور على فواتير مطابقة للبحث.
               </p>
 
             </div>
 
           ) : (
 
-            /* قائمة الفواتير */
-
             <div className="space-y-3">
 
               {filteredInvoices.map(
-                (invoice) => (
+                (invoice) => {
 
-                  <Card
-                    key={invoice.id}
-                    className="border-gray-100 bg-[#FDFBF7] shadow-none transition-all duration-200 hover:border-[#2E7D32]/20 hover:shadow-sm"
-                  >
+                  const paymentStatus =
+                    getPaymentStatus(
+                      invoice.paymentStatus
+                    );
 
-                    <CardContent className="p-4">
+                  return (
 
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <Card
+                      key={invoice.id}
+                      className="border-gray-100 bg-[#FDFBF7] shadow-none transition-all duration-200 hover:border-[#2E7D32]/20 hover:shadow-sm"
+                    >
 
+                      <CardContent className="p-4">
 
-                        {/* معلومات الفاتورة */}
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-                        <div className="flex items-start gap-3">
+                          {/* Information */}
 
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white">
+                          <div className="flex min-w-0 items-start gap-3">
 
-                            <FileText className="h-5 w-5 text-[#2E7D32]" />
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white">
 
-                          </div>
-
-
-                          <div className="space-y-1">
-
-                            <div className="flex flex-wrap items-center gap-2">
-
-                              <p className="font-semibold text-[#374151]">
-                                فاتورة رقم {invoice.number}
-                              </p>
-
-
-                              <Badge
-                                variant="outline"
-                                className="border-[#2E7D32]/20 bg-[#E8F5E9] text-[#2E7D32]"
-                              >
-                                مكتملة
-                              </Badge>
+                              <FileText className="h-5 w-5 text-[#2E7D32]" />
 
                             </div>
 
+                            <div className="min-w-0 space-y-1">
 
-                            <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600">
+                              <div className="flex flex-wrap items-center gap-2">
 
-                              <span>
+                                <p className="font-semibold text-[#374151]">
+                                  فاتورة رقم {invoice.number}
+                                </p>
 
-                                العميل:{' '}
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    paymentStatus.className
+                                  }
+                                >
+                                  {paymentStatus.text}
+                                </Badge>
 
-                                <span className="font-medium text-[#374151]">
+                              </div>
 
-                                  {invoice.customer?.name ||
-                                    'عميل نقدي'}
-
-                                </span>
-
-                              </span>
-
-
-                              <span>
-
-                                المجموع:{' '}
-
-                                <span className="font-bold text-[#2E7D32]">
-
-                                  {invoice.total?.toLocaleString()} ل.س
-
-                                </span>
-
-                              </span>
-
-
-                              {invoice.customer?.phone && (
+                              <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600">
 
                                 <span>
-
-                                  WhatsApp:{' '}
-
+                                  العميل:{' '}
                                   <span className="font-medium text-[#374151]">
-
-                                    {invoice.customer.phone}
-
+                                    {invoice.customer?.name ||
+                                      'عميل نقدي'}
                                   </span>
-
                                 </span>
 
-                              )}
+                                <span>
+                                  التاريخ:{' '}
+                                  <span className="font-medium text-[#374151]">
+                                    {new Date(
+                                      invoice.createdAt ||
+                                      invoice.date
+                                    ).toLocaleDateString(
+                                      'ar-SY',
+                                      {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                      }
+                                    )}
+                                  </span>
+                                </span>
+
+                                <span>
+                                  المجموع:{' '}
+                                  <span className="font-bold text-[#2E7D32]">
+                                    {Number(
+                                      invoice.total || 0
+                                    ).toLocaleString(
+                                      'ar-SY'
+                                    )}{' '}
+                                    ل.س
+                                  </span>
+                                </span>
+
+                                {invoice.customer?.phone && (
+                                  <span>
+                                    WhatsApp:{' '}
+                                    <span
+                                      dir="ltr"
+                                      className="font-medium text-[#374151]"
+                                    >
+                                      {
+                                        invoice.customer.phone
+                                      }
+                                    </span>
+                                  </span>
+                                )}
+
+                              </div>
 
                             </div>
 
                           </div>
 
-                        </div>
+
+                          {/* Buttons */}
+
+                          <div className="flex flex-col gap-2 sm:flex-row">
+
+                            <Button
+                              type="button"
+                              onClick={() =>
+                                sendInvoiceWhatsApp(
+                                  invoice
+                                )
+                              }
+                              disabled={
+                                sendingInvoiceId ===
+                                invoice.id
+                              }
+                              className="h-11 w-full rounded-xl bg-[#25D366] px-5 text-white shadow-sm hover:bg-[#20BD5A] sm:w-auto"
+                            >
+
+                              {sendingInvoiceId ===
+                              invoice.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  جاري الإرسال...
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="h-4 w-4" />
+                                  إرسال WhatsApp
+                                </>
+                              )}
+
+                            </Button>
 
 
-                        {/* الأزرار */}
+                            <Button
+                              type="button"
+                              onClick={() =>
+                                downloadPDF(
+                                  invoice
+                                )
+                              }
+                              disabled={
+                                downloadingInvoiceId ===
+                                invoice.id
+                              }
+                              className="h-11 w-full rounded-xl bg-[#2E7D32] px-5 text-white shadow-sm hover:bg-[#256428] sm:w-auto"
+                            >
 
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                              {downloadingInvoiceId ===
+                              invoice.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  جاري التجهيز...
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="h-4 w-4" />
+                                  تنزيل PDF
+                                </>
+                              )}
 
+                            </Button>
 
-                          {/* إرسال WhatsApp */}
-
-                          <Button
-                            type="button"
-
-                            onClick={() =>
-                              sendInvoiceWhatsApp(
-                                invoice
-                              )
-                            }
-
-                            disabled={
-                              sendingInvoiceId ===
-                              invoice.id
-                            }
-
-                            className="h-11 w-full rounded-xl bg-[#25D366] px-5 text-white shadow-sm transition-all hover:bg-[#20BD5A] hover:shadow-md sm:w-auto"
-                          >
-
-                            {sendingInvoiceId ===
-                            invoice.id ? (
-
-                              <>
-
-                                <Loader2 className="h-4 w-4 animate-spin" />
-
-                                جاري الإرسال...
-
-                              </>
-
-                            ) : (
-
-                              <>
-
-                                <Send className="h-4 w-4" />
-
-                                إرسال WhatsApp
-
-                              </>
-
-                            )}
-
-                          </Button>
-
-
-                          {/* تنزيل PDF */}
-
-                          <Button
-                            type="button"
-
-                            onClick={() =>
-                              downloadPDF(
-                                invoice.id,
-                                invoice.number
-                              )
-                            }
-
-                            className="h-11 w-full rounded-xl bg-[#2E7D32] px-5 text-white shadow-sm transition-all hover:bg-[#2E7D32]/90 hover:shadow-md sm:w-auto"
-                          >
-
-                            <Download className="h-4 w-4" />
-
-                            تنزيل PDF
-
-                          </Button>
+                          </div>
 
                         </div>
 
-                      </div>
+                      </CardContent>
 
-                    </CardContent>
+                    </Card>
 
-                  </Card>
-
-                )
+                  );
+                }
               )}
 
             </div>

@@ -488,24 +488,7 @@ export default function DashboardStats() {
 
             </CardContent>
 
-            {/* =====================================================
-                View All
-            ===================================================== */}
-
-            <div className="border-t border-gray-100 bg-[#FDFBF7] p-4">
-
-              <Link
-                href="/receivables"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#EF6C00]/20 bg-white px-4 py-2.5 text-sm font-semibold text-[#EF6C00] transition-colors hover:bg-[#FFF3E0]"
-              >
-
-                عرض جميع المستحقات
-
-                <ArrowLeft className="h-4 w-4" />
-
-              </Link>
-
-            </div>
+           
 
           </Card>
 

@@ -105,33 +105,39 @@ export default function SuppliesPage() {
   // =====================================================
   // فتح نافذة التعديل
   // =====================================================
+const formatDateForInput = (
+  value: string | null | undefined
+): string => {
+  if (!value) {
+    return '';
+  }
 
-  const handleEdit = (supply: Supply) => {
-    setSelectedSupply(supply);
+  const date = new Date(value);
 
-    setType(supply.type);
-    setName(supply.name);
-    setQuantity(String(supply.quantity));
-    setPrice(String(supply.price));
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
 
-    setDate(
-      supply.date
-        ? new Date(supply.date).toISOString().split('T')[0]
-        : ''
-    );
-
-    setExpiryDate(
-      supply.expiryDate
-        ? new Date(supply.expiryDate).toISOString().split('T')[0]
-        : ''
-    );
-
-    setMessage('');
-    setError('');
-
-    setEditOpen(true);
+  return date.toISOString().split('T')[0] ?? '';
   };
+  
+  const handleEdit = (supply: Supply) => {
+  setSelectedSupply(supply);
 
+  setType(supply.type);
+  setName(supply.name);
+  setQuantity(String(supply.quantity));
+  setPrice(String(supply.price));
+
+  setDate(formatDateForInput(supply.date));
+
+  setExpiryDate(formatDateForInput(supply.expiryDate));
+
+  setMessage('');
+  setError('');
+
+  setEditOpen(true);
+};
   // =====================================================
   // تعديل المستلزم
   // =====================================================

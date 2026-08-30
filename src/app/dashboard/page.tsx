@@ -24,6 +24,7 @@ import DashboardStats from '../../components/DashboardStats';
 import InvoiceList from '#components/InvoiceList';
 import CustomersPage from '../customers/page';
 import SuppliesPage from '../supplies/page';
+import InvoiceManagement from '#components/InvoiceManagement';
 
 
 import farmLogo from '../../../public/assets/farm-Logo.png';
@@ -43,7 +44,7 @@ type TabId =
   | 'sales'
   | 'supplies'
   | 'users'
-  | 'invoiceslist'
+  | 'InvoiceManagement'
   | 'Customers Management'
   | 'Supplies Management'
 
@@ -139,7 +140,7 @@ export default function DashboardPage() {
       icon: Package,
     },
     {
-      id: 'invoiceslist' as TabId,
+      id: 'InvoiceManagement' as TabId,
       label: 'الفواتير',
       icon: Receipt ,
     },
@@ -178,7 +179,7 @@ export default function DashboardPage() {
       <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 md:py-6 ">
 
         {/* Header */}
-        <Card className="mb-6 bg-[#ef6c00a1] shadow-sm ">
+        <Card className="mb-6  shadow-sm ">
           <CardContent className="p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -253,7 +254,7 @@ export default function DashboardPage() {
 
         {/* Navigation */}
         <Card className="mb-6   ">
-          <CardContent className="p-2 bg-sky-300/50  shadow-sm  rounded-xl ">
+          <CardContent className="p-2  shadow-lg  rounded-xl ">
             <nav
               className="flex gap-2 overflow-x-auto rounded-xl"
               aria-label="التنقل الرئيسي"
@@ -302,8 +303,8 @@ export default function DashboardPage() {
           {activeTab === 'supplies' && (
             <SupplyForm />
           )}
-           {activeTab === 'invoiceslist' && (
-            <InvoiceList />
+           {activeTab === 'InvoiceManagement' && (
+            <InvoiceManagement />
           )}
           {activeTab === 'Customers Management' && (
             <CustomersPage />

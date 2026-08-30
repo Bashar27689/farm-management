@@ -284,6 +284,7 @@ async function sendWhatsAppInvoiceTemplate(
         WHATSAPP_TEMPLATE_NAME,
 
       language: {
+
         code:
           WHATSAPP_TEMPLATE_LANGUAGE,
       },
@@ -296,12 +297,14 @@ async function sendWhatsAppInvoiceTemplate(
         // =============================================
 
         {
+
           type:
             "header",
 
           parameters: [
 
             {
+
               type:
                 "document",
 
@@ -314,38 +317,51 @@ async function sendWhatsAppInvoiceTemplate(
                   filename,
               },
             },
-
           ],
         },
 
         // =============================================
         // BODY
-        // {{1}} = Invoice Number
-        // {{2}} = Total
+        // {{1}} = Customer Name
+        // {{2}} = Invoice Number
+        // {{3}} = Total
         // =============================================
 
         {
+
           type:
             "body",
 
           parameters: [
-  {
-    type: "text",
-    text: customerName,
-  },
 
-  {
-    type: "text",
-    text: invoiceNumber,
-  },
+            {
 
-  {
-    type: "text",
-    text: total,
-  },
-],
+              type:
+                "text",
+
+              text:
+                customerName,
+            },
+
+            {
+
+              type:
+                "text",
+
+              text:
+                invoiceNumber,
+            },
+
+            {
+
+              type:
+                "text",
+
+              text:
+                total,
+            },
+          ],
         },
-
       ],
     },
   };
@@ -575,6 +591,15 @@ export async function POST(
 
           sales:
             true,
+
+          payments: {
+
+            orderBy: {
+
+              paymentDate:
+                "asc",
+            },
+          },
         },
       });
 
@@ -654,7 +679,7 @@ export async function POST(
         },
         {
           status:
-            400,
+            400
         }
       );
     }
@@ -662,6 +687,50 @@ export async function POST(
     console.log(
       "WhatsApp recipient:",
       whatsappPhone
+    );
+
+    // =================================================
+    // Payment Information
+    // =================================================
+
+    const paymentsTotal =
+      invoice.payments.reduce(
+        (
+          total,
+          payment
+        ) => {
+
+          return (
+            total +
+            Math.max(
+              0,
+              Number(
+                payment.amount || 0
+              )
+            )
+          );
+
+        },
+        0
+      );
+
+    console.log(
+      "WhatsApp Invoice: payment information",
+      {
+        invoiceTotal:
+          invoice.total,
+
+        paymentsCount:
+          invoice.payments.length,
+
+        paymentsTotal,
+
+        oldInvoicePaidAmount:
+          invoice.paidAmount,
+
+        oldSalesPaidAmount:
+          invoice.sales?.paidAmount,
+      }
     );
 
     // =================================================
@@ -717,15 +786,17 @@ export async function POST(
     // Send Template
     // =================================================
 
- const whatsappResult =
-  await sendWhatsAppInvoiceTemplate(
-    whatsappPhone,
-    mediaId,
-    filename,
-    String(invoice.customer.name),
-    invoiceNumber,
-    invoiceTotal
-  );
+    const whatsappResult =
+      await sendWhatsAppInvoiceTemplate(
+        whatsappPhone,
+        mediaId,
+        filename,
+        String(
+          invoice.customer.name
+        ),
+        invoiceNumber,
+        invoiceTotal
+      );
 
     // =================================================
     // Success

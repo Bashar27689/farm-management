@@ -79,5 +79,22 @@ model Invoice {
   paymentStatus PaymentStatus @default(UNPAID)
   salesId       String?
   sales         Sales?
+  payments      InvoicePayment[]
   createdAt     DateTime      @default(now())
+}
+
+
+model InvoicePayment {
+  id          String   @id @default(cuid())
+
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  amount      Int
+
+  paymentDate DateTime @default(now())
+
+  note        String?
+
+  createdAt   DateTime @default(now())
 }
