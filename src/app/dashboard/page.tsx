@@ -198,7 +198,7 @@ export default function DashboardPage() {
 
                 <div>
                   <h1 className="text-xl font-bold text-[#2E7D32]">
-                    بيض الريف
+                    بيض المراعي
                   </h1>
 
                   <p className="text-xs text-[#374151]/60">
