@@ -1,6 +1,6 @@
 // src/app/api/receivables/route.ts
 
-import {
+/*import {
   NextRequest,
   NextResponse,
 } from 'next/server';
@@ -358,4 +358,4 @@ export async function GET(
       }
     );
   }
-}
+}*/

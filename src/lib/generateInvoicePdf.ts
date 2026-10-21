@@ -18,6 +18,8 @@ import {
 
 type InvoicePdfInput = {
   invoice: any;
+  paymentsTotal?: number; // إضافة هذا الحقل
+  remainingAmount?: number; // إضافة هذا الحقل اختيارياً
 };
 
 // =====================================================
@@ -178,11 +180,52 @@ export async function generateInvoicePdf(
     );
 
   // ===================================================
-  // Paid Amount
+  // PAID AMOUNT - التصليح هنا
   // ===================================================
 
-  const paidAmount =
-    Math.max(
+  // الطريقة 1: استخدام paymentsTotal المرسلة من الـ Route
+  // الطريقة 2: حساب من مصفوفة payments الموجودة في invoice
+  // الطريقة 3: استخدام invoice.paidAmount من قاعدة البيانات
+
+  let paidAmount = 0;
+
+  // أولاً: استخدام paymentsTotal إذا كانت مرسلة
+  if (
+    input.paymentsTotal !== undefined &&
+    input.paymentsTotal !== null
+  ) {
+    paidAmount = Math.max(
+      0,
+      Number(input.paymentsTotal)
+    );
+    console.log(
+      "PDF: using paymentsTotal from input:",
+      paidAmount
+    );
+  }
+  // ثانياً: حساب من مصفوفة payments في invoice
+  else if (
+    invoice.payments &&
+    Array.isArray(invoice.payments) &&
+    invoice.payments.length > 0
+  ) {
+    paidAmount = Math.max(
+      0,
+      invoice.payments.reduce(
+        (total: number, payment: any) => {
+          return total + Number(payment.amount ?? 0);
+        },
+        0
+      )
+    );
+    console.log(
+      "PDF: calculated from payments array:",
+      paidAmount
+    );
+  }
+  // ثالثاً: استخدام invoice.paidAmount من قاعدة البيانات
+  else {
+    paidAmount = Math.max(
       0,
       Number(
         invoice.sales?.paidAmount ??
@@ -190,58 +233,77 @@ export async function generateInvoicePdf(
         0
       )
     );
-
-  // ===================================================
-  // Remaining Amount
-  // ===================================================
-
-  const remainingAmount =
-    Math.max(
-      0,
-      invoiceTotal -
+    console.log(
+      "PDF: using invoice.paidAmount:",
       paidAmount
     );
+  }
+
+  // ===================================================
+  // REMAINING AMOUNT - التصليح هنا
+  // ===================================================
+
+  let remainingAmount = 0;
+
+  // استخدام remainingAmount المرسلة من الـ Route إذا وجدت
+  if (
+    input.remainingAmount !== undefined &&
+    input.remainingAmount !== null
+  ) {
+    remainingAmount = Math.max(
+      0,
+      Number(input.remainingAmount)
+    );
+    console.log(
+      "PDF: using remainingAmount from input:",
+      remainingAmount
+    );
+  } else {
+    // حساب من invoiceTotal و paidAmount
+    remainingAmount = Math.max(
+      0,
+      invoiceTotal - paidAmount
+    );
+    console.log(
+      "PDF: calculated remainingAmount:",
+      remainingAmount
+    );
+  }
 
   // ===================================================
   // Payment Status
   // ===================================================
 
-  let paymentStatusText =
-"مدفوعة "+"غير ";
-
-  let paymentStatusColor =
-    "#C62828";
+  let paymentStatusText = "غير مدفوعة";
+  let paymentStatusColor = "#C62828";
 
   if (
     invoiceTotal > 0 &&
     paidAmount >= invoiceTotal
   ) {
-
-    paymentStatusText =
-      "مدفوعة بالكامل";
-
-    paymentStatusColor =
-      "#2E7D32";
-
+    paymentStatusText = "مدفوعة بالكامل";
+    paymentStatusColor = "#2E7D32";
   } else if (
     paidAmount > 0 &&
     paidAmount < invoiceTotal
   ) {
-
-    paymentStatusText =
-"جزئياً "+"مدفوعة ";
-
-    paymentStatusColor =
-      "#EF6C00";
-
+    paymentStatusText = "مدفوعة جزئياً";
+    paymentStatusColor = "#EF6C00";
   } else {
-
-    paymentStatusText =
-"مدفوعة "+"غير ";
-
-    paymentStatusColor =
-      "#C62828";
+    paymentStatusText = "غير مدفوعة";
+    paymentStatusColor = "#C62828";
   }
+
+  console.log(
+    "PDF: paymentStatus:",
+    paymentStatusText,
+    "paid:",
+    paidAmount,
+    "total:",
+    invoiceTotal,
+    "remaining:",
+    remainingAmount
+  );
 
   // ===================================================
   // Assets
@@ -350,8 +412,7 @@ export async function generateInvoicePdf(
 
       {
 
-        text:
-"مبيعات "+"فاتورة ",
+        text: "فاتورة "+" مبيعات",
 
         fontSize:
           28,
@@ -459,8 +520,6 @@ export async function generateInvoicePdf(
                 bold:
                   true,
               },
-
-             
             ],
 
             alignment:
@@ -481,19 +540,17 @@ export async function generateInvoicePdf(
           {
 
             text: [
-   String(
+              String(
                 invoice.number ?? ""
               ),
               {
 
                 text:
-                 "الفاتورة: "+"رقم ",
+                  "الفاتورة : "+" رقم",
 
                 bold:
                   true,
               },
-
-           
             ],
 
             alignment:
@@ -589,7 +646,6 @@ export async function generateInvoicePdf(
 
         [
 
-
           // -------------------------------------------
           // Customer Phone
           // -------------------------------------------
@@ -604,13 +660,11 @@ export async function generateInvoicePdf(
               {
 
                 text:
-"الهاتف: "+"رقم ",
+                  "الهاتف:"+" رقم ",
 
                 bold:
                   true,
               },
-
-
             ],
 
             alignment:
@@ -626,7 +680,7 @@ export async function generateInvoicePdf(
               12,
             ],
           },
-                    // -------------------------------------------
+          // -------------------------------------------
           // Customer Name
           // -------------------------------------------
 
@@ -640,13 +694,11 @@ export async function generateInvoicePdf(
               {
 
                 text:
-"العميل: "+"أسم ",
+                "العميل: "+" أسم ",
 
                 bold:
                   true,
               },
-
-
             ],
 
             alignment:
@@ -662,7 +714,6 @@ export async function generateInvoicePdf(
               12,
             ],
           },
-
         ],
       ],
     },
@@ -720,7 +771,7 @@ export async function generateInvoicePdf(
       ],
 
       body: [
-       
+
         // =============================================
         // Table Header
         // =============================================
@@ -733,7 +784,7 @@ export async function generateInvoicePdf(
           {
 
             text:
-             "الدفع "+"حالة ",
+              "الدفع "+" حالة",
 
             bold:
               true,
@@ -754,14 +805,14 @@ export async function generateInvoicePdf(
               9,
             ],
           },
-                    // -------------------------------------------
+          // -------------------------------------------
           // Remaining Amount
           // -------------------------------------------
 
           {
 
             text:
-             "المتبقي "+"المبلغ ",
+              "المتبقي "+" المبلغ",
 
             bold:
               true,
@@ -782,7 +833,6 @@ export async function generateInvoicePdf(
               9,
             ],
           },
-          
 
           // -------------------------------------------
           // Paid Amount
@@ -791,7 +841,7 @@ export async function generateInvoicePdf(
           {
 
             text:
-             "المستلم "+"المبلغ ",
+              "المستلم "+" المبلغ",
 
             bold:
               true,
@@ -812,7 +862,6 @@ export async function generateInvoicePdf(
               9,
             ],
           },
-
 
           // -------------------------------------------
           // Invoice Total
@@ -821,7 +870,7 @@ export async function generateInvoicePdf(
           {
 
             text:
-             "الفاتورة "+"إجمالي ",
+             "الفاتورة "+" إجمالي",
 
             bold:
               true,
@@ -842,7 +891,7 @@ export async function generateInvoicePdf(
               9,
             ],
           },
-          
+
           // -------------------------------------------
           // Price
           // -------------------------------------------
@@ -929,9 +978,6 @@ export async function generateInvoicePdf(
               9,
             ],
           },
-
-
-
         ],
 
         // =============================================
@@ -960,7 +1006,9 @@ export async function generateInvoicePdf(
             fillColor:
               remainingAmount === 0
                 ? LIGHT_GREEN
-                : "#FFF3E0",
+                : paidAmount > 0
+                ? "#FFF3E0"
+                : "#FFEBEE",
 
             margin: [
               3,
@@ -1026,9 +1074,6 @@ export async function generateInvoicePdf(
               12,
             ],
           },
-
-
-
 
           // -------------------------------------------
           // Invoice Total
@@ -1232,14 +1277,13 @@ export async function generateInvoicePdf(
       invoiceInfo,
 
       sectionTitle(
-"العميل "+"بيانات "
+        "العميل: "+" بيانات"
       ),
 
       customer,
 
       sectionTitle(
-"الفاتورة "+"تفاصيل "
-      ),
+"الفاتورة "+" تفاصيل"      ),
 
       invoiceTable,
     ],

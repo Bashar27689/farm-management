@@ -161,17 +161,15 @@ export default function DashboardStats() {
       color: '#2E7D32',
       background: '#E8F5E9',
     },
+        {
+      title: 'إجمالي المستحقات',
+      value: data.receivables?.totalAmount || 0,
+      unit: 'ل.س',
+      icon: CircleDollarSign,
+      color: '#EF6C00',
+      background: '#E8F5E9',
+    },
   ];
-
-  // =====================================================
-  // Receivables
-  // =====================================================
-
-  const receivables: Receivable[] =
-    data.receivables?.invoices || [];
-
-  const totalReceivables =
-    data.receivables?.totalAmount || 0;
 
   return (
     <main
@@ -252,7 +250,7 @@ export default function DashboardStats() {
 
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 
             {todayStats.map((stat) => {
 
@@ -322,178 +320,7 @@ export default function DashboardStats() {
 
         </section>
 
-        {/* =====================================================
-            Receivables
-        ===================================================== */}
-
-        <section className="space-y-3">
-
-          <div className="flex items-center gap-2">
-
-            <div className="h-5 w-1 rounded-full bg-[#EF6C00]" />
-
-            <CircleDollarSign className="h-5 w-5 text-[#EF6C00]" />
-
-            <h2 className="text-lg font-bold text-[#374151]">
-              المستحقات
-            </h2>
-
-          </div>
-
-          <Card className="overflow-hidden border-gray-100 bg-white shadow-sm">
-
-            <CardHeader className="border-b border-gray-100">
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-                <div className="flex items-center gap-3">
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF3E0]">
-
-                    <FileText className="h-5 w-5 text-[#EF6C00]" />
-
-                  </div>
-
-                  <div>
-
-                    <CardTitle className="text-lg text-[#374151]">
-                      أعلى 5 مستحقات
-                    </CardTitle>
-
-                    <CardDescription>
-                      الفواتير التي لم يتم تحصيل كامل قيمتها
-                    </CardDescription>
-
-                  </div>
-
-                </div>
-
-                {receivables.length > 0 && (
-                  <div className="rounded-lg bg-[#FFF3E0] px-3 py-2">
-
-                    <p className="text-xs text-[#374151]/60">
-                      إجمالي المستحقات المعروضة
-                    </p>
-
-                    <p className="mt-0.5 text-lg font-bold text-[#EF6C00]">
-
-                      {totalReceivables.toLocaleString()} ل.س
-
-                    </p>
-
-                  </div>
-                )}
-
-              </div>
-
-            </CardHeader>
-
-            <CardContent className="p-0">
-
-              {receivables.length === 0 ? (
-
-                <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8F5E9]">
-
-                    <CircleDollarSign className="h-6 w-6 text-[#2E7D32]" />
-
-                  </div>
-
-                  <h3 className="mt-4 text-base font-bold text-[#374151]">
-                    لا توجد مستحقات
-                  </h3>
-
-                  <p className="mt-1 text-sm text-[#374151]/50">
-                    جميع الفواتير مسددة بالكامل
-                  </p>
-
-                </div>
-
-              ) : (
-
-                <div className="divide-y divide-gray-100">
-
-                  {receivables.map(
-                    (invoice) => (
-
-                      <div
-                        key={invoice.id}
-                        className="flex flex-col gap-4 p-4 transition-colors hover:bg-[#FDFBF7] sm:flex-row sm:items-center sm:justify-between"
-                      >
-
-                        {/* العميل والتاريخ */}
-
-                        <div className="flex items-center gap-3">
-
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3E0]">
-
-                            <FileText className="h-5 w-5 text-[#EF6C00]" />
-
-                          </div>
-
-                          <div>
-
-                            <p className="font-semibold text-[#374151]">
-
-                              {invoice.customer.name}
-
-                            </p>
-
-                            <p className="mt-1 text-xs text-[#374151]/50">
-
-                              تاريخ الفاتورة:{' '}
-
-                              {new Date(
-                                invoice.date
-                              ).toLocaleDateString(
-                                'ar-SY'
-                              )}
-
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                        {/* المبلغ */}
-
-                        <div className="flex items-center justify-between gap-6 sm:justify-end">
-
-                          <div className="text-right">
-
-                            <p className="text-xs text-[#374151]/50">
-                              المبلغ المستحق
-                            </p>
-
-                            <p className="mt-1 text-lg font-bold text-[#EF6C00]">
-
-                              {invoice.remainingAmount.toLocaleString()}{' '}
-                              ل.س
-
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
-              )}
-
-            </CardContent>
-
-           
-
-          </Card>
-
-        </section>
-
+       
         {/* =====================================================
             Recent Sales
         ===================================================== */}
@@ -674,6 +501,7 @@ export default function DashboardStats() {
           </Card>
         )}
 
+      
       </div>
     </main>
   );
